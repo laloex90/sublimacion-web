@@ -485,6 +485,58 @@ return (
           {error}
         </div>
       )}
+      <section
+  style={{
+    background: "#fff",
+    padding: 24,
+    borderRadius: 18,
+    boxShadow: "0 5px 24px #5636560b",
+    marginBottom: 30,
+  }}
+>
+  <h2 style={{ marginTop: 0 }}>Administrar categorías</h2>
+
+  <form
+    onSubmit={(event) => {
+      event.preventDefault();
+      void addCategory();
+    }}
+  >
+    <div
+      style={{
+        display: "flex",
+        flexWrap: "wrap",
+        gap: 10,
+      }}
+    >
+      <input
+        style={{ ...inputStyle, flex: "1 1 220px" }}
+        value={newCategory}
+        onChange={(event) => setNewCategory(event.target.value)}
+        placeholder="Ej. Botellas, Buzos, Gorras"
+        required
+      />
+
+      <button
+        type="submit"
+        disabled={savingCategory}
+        style={{
+          ...buttonStyle,
+          background: "#d94f91",
+          color: "#fff",
+        }}
+      >
+        {savingCategory ? "Guardando..." : "Agregar categoría"}
+      </button>
+    </div>
+  </form>
+
+  <ul>
+    {categories.map((category) => (
+      <li key={category}>{category}</li>
+    ))}
+  </ul>
+</section>
 
       <section
         style={{
