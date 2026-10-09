@@ -2,7 +2,11 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import { supabase } from "@/lib/supabase";
+
 import { formatPrice, type Product } from "@/lib/products";
+
+// Supabase se configura mediante las variables de entorno del proyecto.
+const db = supabase!;
 
 type Category = { name: string; icon_emoji: string | null; icon_image_url: string | null };
 type SiteSettings = { hero_title: string; hero_subtitle: string; hero_image_url: string | null; hero_button_text: string; hero_button_url: string };
@@ -50,52 +54,52 @@ export default function AdminPage() {
   useEffect(() => {
     let mounted = true;
     async function init() {
-      const { data } = await supabase.auth.getSession();
+      const { data } = await db.auth.getSession();
       if (data.session && mounted) await checkAdmin();
       if (mounted) setSessionReady(true);
     }
     init();
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: listener } = db.auth.onAuthStateChange((_event, session) => {
       if (!session) { setIsAdmin(false); setProducts([]); }
     });
     return () => { mounted = false; listener.subscription.unsubscribe(); };
   }, []);
 
   async function checkAdmin() {
-    const { data, error: adminError } = await supabase.rpc("is_admin");
+    const { data, error: adminError } = await db.rpc("is_admin");
     if (adminError || !data) { setIsAdmin(false); setError("La cuenta no tiene permisos de administrador."); return; }
     setIsAdmin(true); setError("");
     await Promise.all([loadProducts(), loadCategories(), loadSettings(), loadPortfolio()]);
   }
   async function login(e: FormEvent) {
     e.preventDefault(); setBusy(true); setError(""); setMessage("");
-    const { error: loginError } = await supabase.auth.signInWithPassword({ email, password });
+    const { error: loginError } = await db.auth.signInWithPassword({ email, password });
     if (loginError) { setError(loginError.message); setBusy(false); return; }
     await checkAdmin(); setBusy(false);
   }
-  async function logout() { await supabase.auth.signOut(); setIsAdmin(false); setPassword(""); setMessage("Sesión cerrada."); }
+  async function logout() { await db.auth.signOut(); setIsAdmin(false); setPassword(""); setMessage("Sesión cerrada."); }
   async function loadProducts() {
-    const { data, error: e } = await supabase.from("products").select("id,name,category,description,price,image_url,featured,is_active").order("created_at", { ascending: false });
+    const { data, error: e } = await db.from("products").select("id,name,category,description,price,image_url,featured,is_active").order("created_at", { ascending: false });
     if (e) setError(e.message); else setProducts((data || []) as Product[]);
   }
   async function loadCategories() {
-    const { data, error: e } = await supabase.from("categories").select("name,icon_emoji,icon_image_url").order("name", { ascending: true });
+    const { data, error: e } = await db.from("categories").select("name,icon_emoji,icon_image_url").order("name", { ascending: true });
     if (!e && data) setCategories(data as Category[]);
   }
   async function loadSettings() {
-    const { data, error: e } = await supabase.from("site_settings").select("hero_title,hero_subtitle,hero_image_url,hero_button_text,hero_button_url").eq("id", 1).maybeSingle();
+    const { data, error: e } = await db.from("site_settings").select("hero_title,hero_subtitle,hero_image_url,hero_button_text,hero_button_url").eq("id", 1).maybeSingle();
     if (!e && data) setSettings(data as SiteSettings);
   }
   async function loadPortfolio() {
-    const { data, error: e } = await supabase.from("portfolio_items").select("id,title,description,image_url,is_active,sort_order").order("sort_order", { ascending: true }).order("created_at", { ascending: false });
+    const { data, error: e } = await db.from("portfolio_items").select("id,title,description,image_url,is_active,sort_order").order("sort_order", { ascending: true }).order("created_at", { ascending: false });
     if (!e && data) setPortfolio(data as PortfolioItem[]);
   }
   async function uploadImage(file: File, folder: string) {
     const safeName = file.name.toLowerCase().replace(/[^a-z0-9.-]/g, "-");
     const path = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${safeName}`;
-    const { error: uploadError } = await supabase.storage.from("product-images").upload(path, file, { upsert: false });
+    const { error: uploadError } = await db.storage.from("product-images").upload(path, file, { upsert: false });
     if (uploadError) throw uploadError;
-    const { data } = supabase.storage.from("product-images").getPublicUrl(path);
+    const { data } = db.storage.from("product-images").getPublicUrl(path);
     return data.publicUrl;
   }
   async function saveProduct(e: FormEvent) {
@@ -105,15 +109,15 @@ export default function AdminPage() {
       if (productImage) imageUrl = await uploadImage(productImage, "products");
       const payload = { name: form.name.trim(), category: form.category, description: form.description.trim(), price: Number(form.price), image_url: imageUrl, featured: form.featured, is_active: form.is_active };
       if (!payload.name || !payload.category || !Number.isFinite(payload.price) || payload.price < 0 || !payload.image_url) throw new Error("Completá nombre, categoría, precio e imagen del producto.");
-      const result = editingId ? await supabase.from("products").update(payload).eq("id", editingId) : await supabase.from("products").insert(payload);
+      const result = editingId ? await db.from("products").update(payload).eq("id", editingId) : await db.from("products").insert(payload);
       if (result.error) throw result.error;
       setForm({ ...emptyProduct, category: categories[0]?.name || "Tazas" }); setEditingId(null); setProductImage(null); await loadProducts(); setMessage("Producto guardado correctamente.");
     } catch (e) { setError(e instanceof Error ? e.message : "No se pudo guardar el producto."); }
     setBusy(false);
   }
   function editProduct(p: Product) { setEditingId(p.id); setForm({ name: p.name, category: p.category, description: p.description || "", price: String(p.price), image_url: p.image_url || "", featured: p.featured, is_active: p.is_active }); setProductImage(null); window.scrollTo({ top: 0, behavior: "smooth" }); }
-  async function toggleProduct(p: Product) { const { error: e } = await supabase.from("products").update({ is_active: !p.is_active }).eq("id", p.id); if (e) setError(e.message); else await loadProducts(); }
-  async function deleteProduct(p: Product) { if (!window.confirm(`¿Eliminar el producto “${p.name}”?`)) return; const { error: e } = await supabase.from("products").delete().eq("id", p.id); if (e) setError(e.message); else { await loadProducts(); setMessage("Producto eliminado."); } }
+  async function toggleProduct(p: Product) { const { error: e } = await db.from("products").update({ is_active: !p.is_active }).eq("id", p.id); if (e) setError(e.message); else await loadProducts(); }
+  async function deleteProduct(p: Product) { if (!window.confirm(`¿Eliminar el producto “${p.name}”?`)) return; const { error: e } = await db.from("products").delete().eq("id", p.id); if (e) setError(e.message); else { await loadProducts(); setMessage("Producto eliminado."); } }
 
   async function addCategory(e: FormEvent) {
     e.preventDefault(); const name = newCategory.trim(); if (!name) return;
@@ -121,7 +125,7 @@ export default function AdminPage() {
     try {
       let iconImageUrl: string | null = null;
       if (categoryImage) iconImageUrl = await uploadImage(categoryImage, "category-icons");
-      const { error: e } = await supabase.from("categories").insert({ name, icon_emoji: categoryEmoji || null, icon_image_url: iconImageUrl });
+      const { error: e } = await db.from("categories").insert({ name, icon_emoji: categoryEmoji || null, icon_image_url: iconImageUrl });
       if (e) throw e;
       setNewCategory(""); setCategoryEmoji("✨"); setCategoryImage(null); await loadCategories(); setMessage("Categoría agregada.");
     } catch (e) { setError(e instanceof Error ? e.message : "No se pudo agregar la categoría."); }
@@ -133,7 +137,7 @@ export default function AdminPage() {
       const current = categories.find(c => c.name === name);
       let imageUrl = current?.icon_image_url || null;
       if (categoryEditImage) imageUrl = await uploadImage(categoryEditImage, "category-icons");
-      const { error: e } = await supabase.from("categories").update({ icon_emoji: categoryEditEmoji || null, icon_image_url: imageUrl }).eq("name", name);
+      const { error: e } = await db.from("categories").update({ icon_emoji: categoryEditEmoji || null, icon_image_url: imageUrl }).eq("name", name);
       if (e) throw e;
       setEditingCategory(null); setCategoryEditImage(null); await loadCategories(); setMessage("Icono de categoría actualizado.");
     } catch (e) { setError(e instanceof Error ? e.message : "No se pudo actualizar el icono."); }
@@ -141,7 +145,7 @@ export default function AdminPage() {
   }
   async function deleteCategory(name: string) {
     if (!window.confirm(`¿Eliminar la categoría “${name}”? Los productos existentes no se borrarán.`)) return;
-    const { error: e } = await supabase.from("categories").delete().eq("name", name);
+    const { error: e } = await db.from("categories").delete().eq("name", name);
     if (e) setError(e.message); else { await loadCategories(); setMessage("Categoría eliminada."); }
   }
   async function saveSiteSettings(e: FormEvent) {
@@ -150,7 +154,7 @@ export default function AdminPage() {
       let imageUrl = settings.hero_image_url || null;
       if (heroImage) imageUrl = await uploadImage(heroImage, "hero");
       const payload = { ...settings, hero_image_url: imageUrl, updated_at: new Date().toISOString() };
-      const { error: e } = await supabase.from("site_settings").upsert({ id: 1, ...payload });
+      const { error: e } = await db.from("site_settings").upsert({ id: 1, ...payload });
       if (e) throw e;
       setSettings({ ...settings, hero_image_url: imageUrl }); setHeroImage(null); setMessage("Portada actualizada.");
     } catch (e) { setError(e instanceof Error ? e.message : "No se pudo guardar la portada."); }
@@ -163,15 +167,15 @@ export default function AdminPage() {
       if (portfolioImage) imageUrl = await uploadImage(portfolioImage, "portfolio");
       if (!portfolioForm.title.trim() || !imageUrl) throw new Error("El trabajo necesita título e imagen.");
       const payload = { title: portfolioForm.title.trim(), description: portfolioForm.description.trim(), image_url: imageUrl, is_active: portfolioForm.is_active, sort_order: 0 };
-      const result = editingPortfolioId ? await supabase.from("portfolio_items").update(payload).eq("id", editingPortfolioId) : await supabase.from("portfolio_items").insert(payload);
+      const result = editingPortfolioId ? await db.from("portfolio_items").update(payload).eq("id", editingPortfolioId) : await db.from("portfolio_items").insert(payload);
       if (result.error) throw result.error;
       setPortfolioForm({ ...emptyPortfolio }); setPortfolioImage(null); setEditingPortfolioId(null); await loadPortfolio(); setMessage("Trabajo guardado.");
     } catch (e) { setError(e instanceof Error ? e.message : "No se pudo guardar el trabajo."); }
     setBusy(false);
   }
   function editPortfolio(item: PortfolioItem) { setEditingPortfolioId(item.id); setPortfolioForm({ title: item.title, description: item.description || "", image_url: item.image_url, is_active: item.is_active }); setPortfolioImage(null); }
-  async function togglePortfolio(item: PortfolioItem) { const { error: e } = await supabase.from("portfolio_items").update({ is_active: !item.is_active }).eq("id", item.id); if (e) setError(e.message); else await loadPortfolio(); }
-  async function deletePortfolio(item: PortfolioItem) { if (!window.confirm(`¿Eliminar “${item.title}” de Nuestros trabajos?`)) return; const { error: e } = await supabase.from("portfolio_items").delete().eq("id", item.id); if (e) setError(e.message); else { await loadPortfolio(); setMessage("Trabajo eliminado."); } }
+  async function togglePortfolio(item: PortfolioItem) { const { error: e } = await db.from("portfolio_items").update({ is_active: !item.is_active }).eq("id", item.id); if (e) setError(e.message); else await loadPortfolio(); }
+  async function deletePortfolio(item: PortfolioItem) { if (!window.confirm(`¿Eliminar “${item.title}” de Nuestros trabajos?`)) return; const { error: e } = await db.from("portfolio_items").delete().eq("id", item.id); if (e) setError(e.message); else { await loadPortfolio(); setMessage("Trabajo eliminado."); } }
 
   const panel: React.CSSProperties = { background: "white", border: "1px solid #e4eaf4", borderRadius: 16, padding: 20, marginBottom: 20, boxShadow: "0 8px 24px #12264e08" };
   const label: React.CSSProperties = { display: "block", fontWeight: 800, fontSize: 13, color: "#192b50" };
