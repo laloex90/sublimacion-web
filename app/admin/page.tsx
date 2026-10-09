@@ -1,19 +1,18 @@
 "use client";
-import { useEffect, useState, type FormEvent } from "react"; import { supabase } from "@/lib/supabase"; import { formatPrice, type Product } from "@/lib/products";
-
-const defaultCategories = [
+import { useEffect, useState, type FormEvent } from "react"; import { supabase } from "@/lib/supabase"; import { formatPrice, type Product } from "@/lib/products";const defaultCategories = [
   "Tazas",
   "Remeras",
   "Set De Jardín",
   "Llaveros",
-  "Pines",
-];
-
-const emptyForm = { name: "", category: "Tazas", description: "", price: "", image_url: "", featured: false, is_active: false, };
+  "Pines",];const emptyForm = { name: "", category: "Tazas", description: "", price: "", image_url: "", featured: false, is_active: false, };
 type ProductForm = typeof emptyForm;
 const inputStyle = { width: "100%", padding: "12px", border: "1px solid #e5dce5", borderRadius: "10px", fontSize: "15px", boxSizing: "border-box" as const, background: "#fff", };
 const buttonStyle = { padding: "11px 16px", border: "none", borderRadius: "10px", cursor: "pointer", fontWeight: 700, fontSize: "14px", };
-export default function AdminPage() { const [sessionReady, setSessionReady] = useState(false); const [email, setEmail] = useState(""); const [password, setPassword] = useState(""); const [loggedIn, setLoggedIn] = useState(false); const [authorized, setAuthorized] = useState(false); const [products, setProducts] = useState<Product[]>([]); const [form, setForm] = useState(emptyForm); const [editingId, setEditingId] = useState<string | null>(null); const [selectedImage, setSelectedImage] = useState<File | null>(null); const [loading, setLoading] = useState(false); const [message, setMessage] = useState(""); const [error, setError] = useState("");
+export default function AdminPage() { const [sessionReady, setSessionReady] = useState(false); const [email, setEmail] = useState(""); const [password, setPassword] = useState(""); const [loggedIn, setLoggedIn] = useState(false); const [authorized, setAuthorized] = useState(false); const [products, setProducts] = useState<Product[]>([]); 
+const [categories, setCategories] = useState<string[]>(defaultCategories);
+const [newCategory, setNewCategory] = useState("");
+const [savingCategory, setSavingCategory] = useState(false);
+const [form, setForm] = useState(emptyForm); const [editingId, setEditingId] = useState<string | null>(null); const [selectedImage, setSelectedImage] = useState<File | null>(null); const [loading, setLoading] = useState(false); const [message, setMessage] = useState(""); const [error, setError] = useState("");
 useEffect(() => { if (!supabase) { setError("Falta configurar Supabase. Revisá las variables de entorno."); setSessionReady(true); return; }
 let mounted = true;
 
