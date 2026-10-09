@@ -7,7 +7,7 @@ import { supabase } from "@/lib/supabase";
 
 type Category = { name: string; icon_emoji: string | null; icon_image_url: string | null };
 type SiteSettings = { hero_title: string; hero_subtitle: string; hero_image_url: string | null; hero_button_text: string; hero_button_url: string };
-type PortfolioItem = { id: string; title: string; description: string; image_url: string; is_active: boolean; sort_order: number };
+type PortfolioItem = { id: string; title: string; description: string; category: string; image_url: string; is_active: boolean; sort_order: number };
 const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "5493624642189";
 const defaultSettings: SiteSettings = { hero_title: "Regalos únicos, hechos a tu estilo", hero_subtitle: "Personalizá tus momentos con productos de sublimación llenos de color, creatividad y cariño.", hero_image_url: null, hero_button_text: "Ver catálogo", hero_button_url: "#catalogo" };
 
@@ -28,7 +28,7 @@ export default function Home() {
         supabase.from("products").select("id,name,category,description,price,image_url,featured,is_active").eq("is_active", true).order("created_at", { ascending: false }),
         supabase.from("categories").select("name,icon_emoji,icon_image_url").eq("is_active", true).order("name", { ascending: true }),
         supabase.from("site_settings").select("hero_title,hero_subtitle,hero_image_url,hero_button_text,hero_button_url").eq("id", 1).maybeSingle(),
-        supabase.from("portfolio_items").select("id,title,description,image_url,is_active,sort_order").eq("is_active", true).order("sort_order", { ascending: true }).order("created_at", { ascending: false }),
+        supabase.from("portfolio_items").select("id,title,description,category,image_url,is_active,sort_order").eq("is_active", true).order("sort_order", { ascending: true }).order("created_at", { ascending: false }),
       ]);
       if (!productResult.error && productResult.data?.length) setProducts(productResult.data as Product[]);
       if (!categoryResult.error && categoryResult.data?.length) setCategoryItems(categoryResult.data as Category[]);
@@ -39,6 +39,8 @@ export default function Home() {
   }, []);
 
   const categoryNames = useMemo(() => categoryItems.map(c => c.name), [categoryItems]);
+  const [activePortfolioCategory, setActivePortfolioCategory] = useState("Todos");
+  const visiblePortfolio = useMemo(() => portfolio.filter(item => activePortfolioCategory === "Todos" || (item.category || "Tazas") === activePortfolioCategory), [portfolio, activePortfolioCategory]);
   const visibleProducts = useMemo(() => products.filter(product => {
     const categoryMatch = activeCategory === "Todos" || product.category === activeCategory;
     const searchMatch = `${product.name} ${product.category} ${product.description}`.toLowerCase().includes(search.toLowerCase());
@@ -80,7 +82,7 @@ export default function Home() {
       <div className="product-grid">{visibleProducts.map((product, index) => <article className="product-card" key={product.id}><div className={`product-image image-${index % 6}`}><img src={product.image_url} alt={product.name} loading="lazy"/>{product.featured && <span className="product-badge">Destacado</span>}<button className="favorite" aria-label={`Agregar ${product.name} al carrito`} onClick={() => setCart(current => [...current, product])}><Heart size={17}/></button></div><div className="product-info"><span className="product-category">{product.category}</span><h3>{product.name}</h3><p>{product.description}</p><div className="product-bottom"><strong>{formatPrice(product.price)}</strong><button className="add-button" onClick={() => setCart(current => [...current, product])}>Sumar <span>+</span></button></div><a className="product-whatsapp" href={whatsappLink([product])} target="_blank" rel="noreferrer"><MessageCircle size={16}/> Consultar por WhatsApp</a></div></article>)}{visibleProducts.length === 0 && <div className="empty-state">No encontramos productos con esa búsqueda. Probá con otra palabra o categoría.</div>}</div>
     </section>
 
-    {portfolio.length > 0 && <section className="section portfolio-section" id="trabajos"><div className="section-heading"><div><span className="section-kicker">HECHO CON CREATIVIDAD</span><h2>Nuestros trabajos <span>✦</span></h2><p>Algunas ideas que hicimos realidad.</p></div></div><div className="portfolio-grid">{portfolio.map(item => <article className="portfolio-card" key={item.id}><img src={item.image_url} alt={item.title} loading="lazy"/><div><h3>{item.title}</h3>{item.description && <p>{item.description}</p>}</div></article>)}</div></section>}
+    {portfolio.length > 0 && <section className="section portfolio-section" id="trabajos"><div className="section-heading"><div><span className="section-kicker">HECHO CON CREATIVIDAD</span><h2>Nuestros trabajos <span>✦</span></h2><p>Algunas ideas que hicimos realidad.</p></div></div><div className="filters portfolio-filters"><button className={activePortfolioCategory === "Todos" ? "filter active" : "filter"} onClick={() => setActivePortfolioCategory("Todos")}>Todos</button>{categoryNames.map(c => <button key={c} className={activePortfolioCategory === c ? "filter active" : "filter"} onClick={() => setActivePortfolioCategory(c)}>{c}</button>)}</div><div className="portfolio-grid">{visiblePortfolio.map(item => <article className="portfolio-card" key={item.id}><img src={item.image_url} alt={item.title} loading="lazy"/><div><span className="product-category">{item.category || "Tazas"}</span><h3>{item.title}</h3>{item.description && <p>{item.description}</p>}</div></article>)}</div>{visiblePortfolio.length === 0 && <div className="empty-state">Todavía no hay trabajos en esta categoría.</div>}</section>}
 
     <section className="benefits" id="personalizacion"><div><span className="benefit-icon pink"><Palette/></span><span><b>Diseños a tu gusto</b><small>Tu idea se convierte en un regalo.</small></span></div><div><span className="benefit-icon green"><MessageCircle/></span><span><b>Atención por WhatsApp</b><small>Consultá personalización y disponibilidad.</small></span></div><div><span className="benefit-icon blue"><Truck/></span><span><b>Entrega a coordinar</b><small>Consultanos por envíos y retiros.</small></span></div></section>
 
