@@ -42,6 +42,7 @@ async function checkAdmin() {
 
   setAuthorized(true);
   setError("");
+  await refreshCategories();
   await loadProducts();
 }
 
