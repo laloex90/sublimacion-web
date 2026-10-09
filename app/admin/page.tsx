@@ -116,7 +116,31 @@ await refreshProducts();
 setMessage("¡Sesión iniciada correctamente!");
 setLoading(false);
 }
-async function refreshCategories();
+ async function refreshCategories() {
+  if (!supabase) return;
+
+  const { data, error: categoriesError } = await supabase
+    .from("categories")
+    .select("name")
+    .eq("is_active", true)
+    .order("name", { ascending: true });
+
+  if (categoriesError) {
+    setError(
+      "No se pudieron cargar las categorías: " +
+        categoriesError.message
+    );
+    return;
+  }
+
+  const savedCategories = (data ?? []).map((item) => item.name);
+
+  setCategories(
+    savedCategories.length > 0
+      ? savedCategories
+      : defaultCategories
+  );
+}                                    
 async function refreshProducts() { if (!supabase) return;
 const { data, error: loadError } = await supabase
   .from("products")
