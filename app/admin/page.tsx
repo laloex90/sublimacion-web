@@ -115,6 +115,7 @@ await refreshProducts();
 setMessage("¡Sesión iniciada correctamente!");
 setLoading(false);
 }
+async fuction refreshCategories()
 async function refreshProducts() { if (!supabase) return;
 const { data, error: loadError } = await supabase
   .from("products")
