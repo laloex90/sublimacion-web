@@ -5,7 +5,8 @@ import { ArrowRight, Check, Heart, Menu, Palette, Search, ShoppingCart, Sparkles
 import { categories, demoProducts, formatPrice, type Product } from "@/lib/products";
 import { supabase } from "@/lib/supabase";
 
-const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "549XXXXXXXXXX";
+const whatsappNumber =
+  process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "5493624642189";
 
 export default function Home() {
   const [products, setProducts] = useState<Product[]>(demoProducts);
@@ -79,7 +80,9 @@ export default function Home() {
         <div className="section-heading"><div><span className="section-kicker">EXPLORÁ Y ENCONTRÁ</span><h2>Nuestras categorías <span>✦</span></h2><p>Un detalle especial para cada persona y ocasión.</p></div><a href="#catalogo" className="text-link">Ver catálogo completo <ArrowRight size={16}/></a></div>
         <div className="category-grid">
           {categories.map((category, index) => <button key={category} className={`category-card cat-${index}`} onClick={() => { setActiveCategory(category); document.getElementById("catalogo")?.scrollIntoView({ behavior: "smooth" }); }}>
-            <span className="category-emoji">{["☕","👕","🔑","🧴","🎁","🧢","🎉","🎨"][index]}</span><b>{category}</b><span className="category-arrow"><ArrowRight size={15}/></span>
+            <span className="category-emoji">
+  {["☕", "👕", "🌱", "🔑", "📌"][index]}
+</span><b>{category}</b><span className="category-arrow"><ArrowRight size={15}/></span>
           </button>)}
         </div>
       </section>
