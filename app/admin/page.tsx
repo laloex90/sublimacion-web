@@ -1,6 +1,14 @@
 "use client";
 import { useEffect, useState, type FormEvent } from "react"; import { supabase } from "@/lib/supabase"; import { formatPrice, type Product } from "@/lib/products";
-const categories = [ "Tazas", "Remeras", "Set De Jardín", "Llaveros", "Pines", ];
+
+const defaultCategories = [
+  "Tazas",
+  "Remeras",
+  "Set De Jardín",
+  "Llaveros",
+  "Pines",
+];
+
 const emptyForm = { name: "", category: "Tazas", description: "", price: "", image_url: "", featured: false, is_active: false, };
 type ProductForm = typeof emptyForm;
 const inputStyle = { width: "100%", padding: "12px", border: "1px solid #e5dce5", borderRadius: "10px", fontSize: "15px", boxSizing: "border-box" as const, background: "#fff", };
