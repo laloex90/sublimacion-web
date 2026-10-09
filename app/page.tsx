@@ -23,6 +23,7 @@ export default function Home() {
 
   useEffect(() => {
     async function loadContent() {
+      if (!supabase) return;
       const [productResult, categoryResult, settingsResult, portfolioResult] = await Promise.all([
         supabase.from("products").select("id,name,category,description,price,image_url,featured,is_active").eq("is_active", true).order("created_at", { ascending: false }),
         supabase.from("categories").select("name,icon_emoji,icon_image_url").eq("is_active", true).order("name", { ascending: true }),
