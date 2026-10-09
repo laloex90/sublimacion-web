@@ -253,443 +253,524 @@ resetForm();
 setMessage("");
 setError("");
 }
-if (!sessionReady) { return ( <main style={{ padding: 32, fontFamily: "Arial, sans-serif" }}> Cargando panel de administración...  ); }
-if (!loggedIn || !authorized) { return ( <main style={{ minHeight: "100vh", padding: "32px 16px", background: "linear-gradient(135deg,#fff4f8,#f5f0ff)", display: "grid", placeItems: "center", fontFamily: "Arial, sans-serif", boxSizing: "border-box", }} > <form onSubmit={login} style={{ background: "#fff", padding: 30, borderRadius: 20, boxShadow: "0 12px 40px #6e46651c", width: "100%", maxWidth: 420, boxSizing: "border-box", }} > <div style={{ fontSize: 34, marginBottom: 8 }}>🎨 <h1 style={{ color: "#543b56", margin: "0 0 8px" }}> Tu Sublimación Creativa  <p style={{ color: "#776a78", marginBottom: 24 }}> Panel privado de administración 
-      <label style={{ display: "block", marginBottom: 6 }}>
-        Correo electrónico
-      </label>
-      <input
-        style={{ ...inputStyle, marginBottom: 16 }}
-        type="email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        autoComplete="username"
-        required
-      />
 
-      <label style={{ display: "block", marginBottom: 6 }}>
-        Contraseña
-      </label>
-      <input
-        style={{ ...inputStyle, marginBottom: 20 }}
-        type="password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        autoComplete="current-password"
-        required
-      />
-
-      {error && (
-        <p style={{ color: "#b4234d", fontSize: 14 }}>{error}</p>
-      )}
-
-      <button
-        type="submit"
-        disabled={loading}
-        style={{
-          ...buttonStyle,
-          width: "100%",
-          background: "#d94f91",
-          color: "#fff",
-          opacity: loading ? 0.7 : 1,
-        }}
-      >
-        {loading ? "Ingresando..." : "Iniciar sesión"}
-      </button>
-
-      <p style={{ fontSize: 12, color: "#887c89", marginTop: 18 }}>
-        Acceso exclusivo para usuarios autorizados en Supabase.
-      </p>
-    </form>
-  </main>
-);
+if (!sessionReady) {
+  return (
+    <main style={{ padding: 32, fontFamily: "Arial, sans-serif" }}>
+      Cargando panel de administración...
+    </main>
+  );
 }
-return ( <main style={{ minHeight: "100vh", padding: "24px 16px 60px", background: "#faf7fb", color: "#352c39", fontFamily: "Arial, sans-serif", }} > <div style={{ maxWidth: 1100, margin: "0 auto" }}> <header style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: 16, marginBottom: 28, }} >  <p style={{ color: "#d94f91", fontWeight: 700, marginBottom: 6 }}> ADMINISTRACIÓN  <h1 style={{ margin: 0, fontSize: 30 }}> Tu Sublimación Creativa 🎨  <p style={{ color: "#776a78" }}> Gestioná tu catálogo de productos.  
-      <button
-        onClick={logout}
-        style={{ ...buttonStyle, background: "#eee5ef", color: "#543b56" }}
-      >
-        Cerrar sesión
-      </button>
-    </header>
 
-    {message && (
-      <div
-        style={{
-          background: "#e8f8ed",
-          color: "#20653b",
-          padding: 13,
-          borderRadius: 10,
-          marginBottom: 16,
-        }}
-      >
-        {message}
-      </div>
-    )}
-
-    {error && (
-      <div
-        style={{
-          background: "#fff0f0",
-          color: "#a52727",
-          padding: 13,
-          borderRadius: 10,
-          marginBottom: 16,
-          overflowWrap: "anywhere",
-        }}
-      >
-        {error}
-      </div>
-    )}
-
-    <section
+if (!loggedIn || !authorized) {
+  return (
+    <main
       style={{
-        background: "#fff",
-        padding: 24,
-        borderRadius: 18,
-        boxShadow: "0 5px 24px #5636560b",
-        marginBottom: 30,
+        minHeight: "100vh",
+        padding: "32px 16px",
+        background: "linear-gradient(135deg,#fff4f8,#f5f0ff)",
+        display: "grid",
+        placeItems: "center",
+        fontFamily: "Arial, sans-serif",
+        boxSizing: "border-box",
       }}
     >
-      <h2 style={{ marginTop: 0 }}>
-        {editingId ? "Editar producto" : "Agregar producto"}
-      </h2>
+      <form
+        onSubmit={login}
+        style={{
+          background: "#fff",
+          padding: 30,
+          borderRadius: 20,
+          boxShadow: "0 12px 40px #6e46651c",
+          width: "100%",
+          maxWidth: 420,
+          boxSizing: "border-box",
+        }}
+      >
+        <div style={{ fontSize: 34, marginBottom: 8 }}>🎨</div>
+        <h1 style={{ color: "#543b56", margin: "0 0 8px" }}>
+          Tu Sublimación Creativa
+        </h1>
+        <p style={{ color: "#776a78", marginBottom: 24 }}>
+          Panel privado de administración
+        </p>
 
-      <form onSubmit={saveProduct}>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))",
-            gap: 16,
-          }}
-        >
-          <div>
-            <label>Nombre del producto *</label>
-            <input
-              style={inputStyle}
-              value={form.name}
-              onChange={(e) =>
-                setForm({ ...form, name: e.target.value })
-              }
-              required
-            />
-          </div>
+        <label style={{ display: "block", marginBottom: 6 }}>
+          Correo electrónico
+        </label>
+        <input
+          style={{ ...inputStyle, marginBottom: 16 }}
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          autoComplete="username"
+          required
+        />
 
-          <div>
-            <label>Categoría *</label>
-            <select
-              style={inputStyle}
-              value={form.category}
-              onChange={(e) =>
-                setForm({ ...form, category: e.target.value })
-              }
-            >
-              {categories.map((category) => (
-                <option key={category} value={category}>
-                  {category}
-                </option>
-              ))}
-            </select>
-          </div>
+        <label style={{ display: "block", marginBottom: 6 }}>
+          Contraseña
+        </label>
+        <input
+          style={{ ...inputStyle, marginBottom: 20 }}
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          autoComplete="current-password"
+          required
+        />
 
-          <div>
-            <label>Precio en pesos argentinos *</label>
-            <input
-              style={inputStyle}
-              type="number"
-              min="0"
-              step="0.01"
-              value={form.price}
-              onChange={(e) =>
-                setForm({ ...form, price: e.target.value })
-              }
-              required
-            />
-          </div>
-
-          <div>
-            <label>Imagen del producto</label>
-            <input
-              style={inputStyle}
-              type="file"
-              accept="image/*"
-              onChange={(e) =>
-                setSelectedImage(e.target.files?.[0] ?? null)
-              }
-            />
-            <small style={{ color: "#776a78" }}>
-              {selectedImage
-                ? selectedImage.name
-                : "Elegí una imagen desde tu dispositivo."}
-            </small>
-          </div>
-        </div>
-
-        <div style={{ marginTop: 16 }}>
-          <label>Descripción</label>
-          <textarea
-            style={{ ...inputStyle, minHeight: 95, resize: "vertical" }}
-            value={form.description}
-            onChange={(e) =>
-              setForm({ ...form, description: e.target.value })
-            }
-            placeholder="Contá los detalles del producto..."
-          />
-        </div>
-
-        {form.image_url && (
-          <div style={{ marginTop: 16 }}>
-            <p>Imagen actual:</p>
-            <img
-              src={form.image_url}
-              alt="Imagen actual del producto"
-              style={{
-                width: 130,
-                height: 130,
-                objectFit: "cover",
-                borderRadius: 12,
-                border: "1px solid #eee",
-              }}
-            />
-          </div>
+        {error && (
+          <p style={{ color: "#b4234d", fontSize: 14 }}>{error}</p>
         )}
 
-        <div
+        <button
+          type="submit"
+          disabled={loading}
           style={{
-            display: "flex",
-            flexWrap: "wrap",
-            gap: 20,
-            margin: "20px 0",
+            ...buttonStyle,
+            width: "100%",
+            background: "#d94f91",
+            color: "#fff",
+            opacity: loading ? 0.7 : 1,
           }}
         >
-          <label>
-            <input
-              type="checkbox"
-              checked={form.featured}
-              onChange={(e) =>
-                setForm({ ...form, featured: e.target.checked })
-              }
-            />{" "}
-            Producto destacado
-          </label>
+          {loading ? "Ingresando..." : "Iniciar sesión"}
+        </button>
 
-          <label>
-            <input
-              type="checkbox"
-              checked={form.is_active}
-              onChange={(e) =>
-                setForm({ ...form, is_active: e.target.checked })
-              }
-            />{" "}
-            Mostrar en el catálogo público
-          </label>
-        </div>
-
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
-          <button
-            type="submit"
-            disabled={loading}
-            style={{
-              ...buttonStyle,
-              background: "#d94f91",
-              color: "#fff",
-            }}
-          >
-            {loading
-              ? "Guardando..."
-              : editingId
-                ? "Guardar cambios"
-                : "Agregar producto"}
-          </button>
-
-          {editingId && (
-            <button
-              type="button"
-              onClick={resetForm}
-              style={{
-                ...buttonStyle,
-                background: "#eee5ef",
-                color: "#543b56",
-              }}
-            >
-              Cancelar edición
-            </button>
-          )}
-        </div>
+        <p style={{ fontSize: 12, color: "#887c89", marginTop: 18 }}>
+          Acceso exclusivo para usuarios autorizados en Supabase.
+        </p>
       </form>
-    </section>
+    </main>
+  );
+}
 
-    <section>
-      <div
+return (
+  <main
+    style={{
+      minHeight: "100vh",
+      padding: "24px 16px 60px",
+      background: "#faf7fb",
+      color: "#352c39",
+      fontFamily: "Arial, sans-serif",
+    }}
+  >
+    <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+      <header
         style={{
           display: "flex",
           flexWrap: "wrap",
           justifyContent: "space-between",
           alignItems: "center",
-          gap: 12,
-          marginBottom: 16,
+          gap: 16,
+          marginBottom: 28,
         }}
       >
-        <h2 style={{ margin: 0 }}>Productos cargados ({products.length})</h2>
+        <div>
+          <p style={{ color: "#d94f91", fontWeight: 700, marginBottom: 6 }}>
+            ADMINISTRACIÓN
+          </p>
+          <h1 style={{ margin: 0, fontSize: 30 }}>
+            Tu Sublimación Creativa 🎨
+          </h1>
+          <p style={{ color: "#776a78" }}>
+            Gestioná tu catálogo de productos.
+          </p>
+        </div>
+
         <button
-          onClick={refreshProducts}
+          onClick={logout}
           style={{
             ...buttonStyle,
             background: "#eee5ef",
             color: "#543b56",
           }}
         >
-          Actualizar lista
+          Cerrar sesión
         </button>
-      </div>
+      </header>
 
-      {products.length === 0 ? (
+      {message && (
         <div
           style={{
-            background: "#fff",
-            borderRadius: 14,
-            padding: 28,
-            color: "#776a78",
+            background: "#e8f8ed",
+            color: "#20653b",
+            padding: 13,
+            borderRadius: 10,
+            marginBottom: 16,
           }}
         >
-          Todavía no hay productos guardados en la base de datos. Usá el
-          formulario para cargar el primero.
+          {message}
         </div>
-      ) : (
-        <div style={{ display: "grid", gap: 14 }}>
-          {products.map((product) => (
-            <article
-              key={product.id}
+      )}
+
+      {error && (
+        <div
+          style={{
+            background: "#fff0f0",
+            color: "#a52727",
+            padding: 13,
+            borderRadius: 10,
+            marginBottom: 16,
+            overflowWrap: "anywhere",
+          }}
+        >
+          {error}
+        </div>
+      )}
+
+      <section
+        style={{
+          background: "#fff",
+          padding: 24,
+          borderRadius: 18,
+          boxShadow: "0 5px 24px #5636560b",
+          marginBottom: 30,
+        }}
+      >
+        <h2 style={{ marginTop: 0 }}>
+          {editingId ? "Editar producto" : "Agregar producto"}
+        </h2>
+
+        <form onSubmit={saveProduct}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))",
+              gap: 16,
+            }}
+          >
+            <div>
+              <label>Nombre del producto *</label>
+              <input
+                style={inputStyle}
+                value={form.name}
+                onChange={(e) =>
+                  setForm({ ...form, name: e.target.value })
+                }
+                required
+              />
+            </div>
+
+            <div>
+              <label>Categoría *</label>
+              <select
+                style={inputStyle}
+                value={form.category}
+                onChange={(e) =>
+                  setForm({ ...form, category: e.target.value })
+                }
+              >
+                {categories.map((category) => (
+                  <option key={category} value={category}>
+                    {category}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label>Precio en pesos argentinos *</label>
+              <input
+                style={inputStyle}
+                type="number"
+                min="0"
+                step="0.01"
+                value={form.price}
+                onChange={(e) =>
+                  setForm({ ...form, price: e.target.value })
+                }
+                required
+              />
+            </div>
+
+            <div>
+              <label>Imagen del producto</label>
+              <input
+                style={inputStyle}
+                type="file"
+                accept="image/*"
+                onChange={(e) =>
+                  setSelectedImage(e.target.files?.[0] ?? null)
+                }
+              />
+              <small style={{ color: "#776a78" }}>
+                {selectedImage
+                  ? selectedImage.name
+                  : "Elegí una imagen desde tu dispositivo."}
+              </small>
+            </div>
+          </div>
+
+          <div style={{ marginTop: 16 }}>
+            <label>Descripción</label>
+            <textarea
+              style={{ ...inputStyle, minHeight: 95, resize: "vertical" }}
+              value={form.description}
+              onChange={(e) =>
+                setForm({ ...form, description: e.target.value })
+              }
+              placeholder="Contá los detalles del producto..."
+            />
+          </div>
+
+          {form.image_url && (
+            <div style={{ marginTop: 16 }}>
+              <p>Imagen actual:</p>
+              <img
+                src={form.image_url}
+                alt="Imagen actual del producto"
+                style={{
+                  width: 130,
+                  height: 130,
+                  objectFit: "cover",
+                  borderRadius: 12,
+                  border: "1px solid #eee",
+                }}
+              />
+            </div>
+          )}
+
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 20,
+              margin: "20px 0",
+            }}
+          >
+            <label>
+              <input
+                type="checkbox"
+                checked={form.featured}
+                onChange={(e) =>
+                  setForm({ ...form, featured: e.target.checked })
+                }
+              />{" "}
+              Producto destacado
+            </label>
+
+            <label>
+              <input
+                type="checkbox"
+                checked={form.is_active}
+                onChange={(e) =>
+                  setForm({ ...form, is_active: e.target.checked })
+                }
+              />{" "}
+              Mostrar en el catálogo público
+            </label>
+          </div>
+
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+            <button
+              type="submit"
+              disabled={loading}
               style={{
-                display: "flex",
-                flexWrap: "wrap",
-                alignItems: "center",
-                gap: 16,
-                padding: 16,
-                background: "#fff",
-                borderRadius: 16,
-                boxShadow: "0 4px 18px #56365608",
+                ...buttonStyle,
+                background: "#d94f91",
+                color: "#fff",
               }}
             >
-              {product.image_url ? (
-                <img
-                  src={product.image_url}
-                  alt={product.name}
-                  style={{
-                    width: 100,
-                    height: 100,
-                    objectFit: "cover",
-                    borderRadius: 12,
-                    background: "#f7f2f7",
-                  }}
-                />
-              ) : (
-                <div
-                  style={{
-                    width: 100,
-                    height: 100,
-                    borderRadius: 12,
-                    background: "#f7f2f7",
-                    display: "grid",
-                    placeItems: "center",
-                    fontSize: 30,
-                  }}
-                >
-                  🎨
-                </div>
-              )}
+              {loading
+                ? "Guardando..."
+                : editingId
+                  ? "Guardar cambios"
+                  : "Agregar producto"}
+            </button>
 
-              <div style={{ flex: "1 1 220px", minWidth: 0 }}>
+            {editingId && (
+              <button
+                type="button"
+                onClick={resetForm}
+                style={{
+                  ...buttonStyle,
+                  background: "#eee5ef",
+                  color: "#543b56",
+                }}
+              >
+                Cancelar edición
+              </button>
+            )}
+          </div>
+        </form>
+      </section>
+
+      <section>
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: 12,
+            marginBottom: 16,
+          }}
+        >
+          <h2 style={{ margin: 0 }}>
+            Productos cargados ({products.length})
+          </h2>
+          <button
+            onClick={refreshProducts}
+            style={{
+              ...buttonStyle,
+              background: "#eee5ef",
+              color: "#543b56",
+            }}
+          >
+            Actualizar lista
+          </button>
+        </div>
+
+        {products.length === 0 ? (
+          <div
+            style={{
+              background: "#fff",
+              borderRadius: 14,
+              padding: 28,
+              color: "#776a78",
+            }}
+          >
+            Todavía no hay productos guardados en la base de datos. Usá el
+            formulario para cargar el primero.
+          </div>
+        ) : (
+          <div style={{ display: "grid", gap: 14 }}>
+            {products.map((product) => (
+              <article
+                key={product.id}
+                style={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  alignItems: "center",
+                  gap: 16,
+                  padding: 16,
+                  background: "#fff",
+                  borderRadius: 16,
+                  boxShadow: "0 4px 18px #56365608",
+                }}
+              >
+                {product.image_url ? (
+                  <img
+                    src={product.image_url}
+                    alt={product.name}
+                    style={{
+                      width: 100,
+                      height: 100,
+                      objectFit: "cover",
+                      borderRadius: 12,
+                      background: "#f7f2f7",
+                    }}
+                  />
+                ) : (
+                  <div
+                    style={{
+                      width: 100,
+                      height: 100,
+                      borderRadius: 12,
+                      background: "#f7f2f7",
+                      display: "grid",
+                      placeItems: "center",
+                      fontSize: 30,
+                    }}
+                  >
+                    🎨
+                  </div>
+                )}
+
+                <div style={{ flex: "1 1 220px", minWidth: 0 }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      flexWrap: "wrap",
+                      alignItems: "center",
+                      gap: 8,
+                    }}
+                  >
+                    <h3 style={{ margin: "0 0 6px" }}>{product.name}</h3>
+                    {product.featured && (
+                      <span style={{ color: "#b14c85", fontSize: 12 }}>
+                        ✦ Destacado
+                      </span>
+                    )}
+                  </div>
+
+                  <p style={{ margin: "0 0 6px", color: "#776a78" }}>
+                    {product.category}
+                  </p>
+                  <strong>{formatPrice(product.price)}</strong>
+                  <p
+                    style={{
+                      margin: "8px 0",
+                      color: "#776a78",
+                      overflowWrap: "anywhere",
+                    }}
+                  >
+                    {product.description}
+                  </p>
+                  <span
+                    style={{
+                      fontSize: 12,
+                      color: product.is_active ? "#237747" : "#986a27",
+                    }}
+                  >
+                    {product.is_active
+                      ? "● Visible en el catálogo"
+                      : "● Oculto del catálogo"}
+                  </span>
+                </div>
+
                 <div
                   style={{
                     display: "flex",
                     flexWrap: "wrap",
-                    alignItems: "center",
                     gap: 8,
                   }}
                 >
-                  <h3 style={{ margin: "0 0 6px" }}>{product.name}</h3>
-                  {product.featured && (
-                    <span style={{ color: "#b14c85", fontSize: 12 }}>
-                      ✦ Destacado
-                    </span>
-                  )}
+                  <button
+                    onClick={() => editProduct(product)}
+                    style={{
+                      ...buttonStyle,
+                      background: "#eee5ef",
+                      color: "#543b56",
+                    }}
+                  >
+                    Editar
+                  </button>
+
+                  <button
+                    onClick={() => toggleActive(product)}
+                    style={{
+                      ...buttonStyle,
+                      background: product.is_active ? "#fff0e2" : "#e8f8ed",
+                      color: "#543b56",
+                    }}
+                  >
+                    {product.is_active ? "Ocultar" : "Publicar"}
+                  </button>
+
+                  <button
+                    onClick={() => deleteProduct(product)}
+                    style={{
+                      ...buttonStyle,
+                      background: "#fff0f0",
+                      color: "#a52727",
+                    }}
+                  >
+                    Eliminar
+                  </button>
                 </div>
-                <p style={{ margin: "0 0 6px", color: "#776a78" }}>
-                  {product.category}
-                </p>
-                <strong>{formatPrice(product.price)}</strong>
-                <p
-                  style={{
-                    margin: "8px 0",
-                    color: "#776a78",
-                    overflowWrap: "anywhere",
-                  }}
-                >
-                  {product.description}
-                </p>
-                <span
-                  style={{
-                    fontSize: 12,
-                    color: product.is_active ? "#237747" : "#986a27",
-                  }}
-                >
-                  {product.is_active
-                    ? "● Visible en el catálogo"
-                    : "● Oculto del catálogo"}
-                </span>
-              </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
 
-              <div
-                style={{
-                  display: "flex",
-                  flexWrap: "wrap",
-                  gap: 8,
-                }}
-              >
-                <button
-                  onClick={() => editProduct(product)}
-                  style={{
-                    ...buttonStyle,
-                    background: "#eee5ef",
-                    color: "#543b56",
-                  }}
-                >
-                  Editar
-                </button>
-
-                <button
-                  onClick={() => toggleActive(product)}
-                  style={{
-                    ...buttonStyle,
-                    background: product.is_active ? "#fff0e2" : "#e8f8ed",
-                    color: "#543b56",
-                  }}
-                >
-                  {product.is_active ? "Ocultar" : "Publicar"}
-                </button>
-
-                <button
-                  onClick={() => deleteProduct(product)}
-                  style={{
-                    ...buttonStyle,
-                    background: "#fff0f0",
-                    color: "#a52727",
-                  }}
-                >
-                  Eliminar
-                </button>
-              </div>
-            </article>
-          ))}
-        </div>
-      )}
-    </section>
-
-    <p style={{ color: "#887c89", fontSize: 12, marginTop: 28 }}>
-      Las imágenes reemplazadas o los archivos de productos eliminados
-      permanecen en Storage para evitar borrar archivos por error.
-    </p>
-  </div>
-</main>
-); }
+      <p style={{ color: "#887c89", fontSize: 12, marginTop: 28 }}>
+        Las imágenes reemplazadas o los archivos de productos eliminados
+        permanecen en Storage para evitar borrar archivos por error.
+      </p>
+    </div>
+  </main>
+);
+}
