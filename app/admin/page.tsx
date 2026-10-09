@@ -1,69 +1,12 @@
 "use client";
-
-import { useEffect, useState, type FormEvent } from "react";
-import { supabase } from "@/lib/supabase";
-import { formatPrice, type Product } from "@/lib/products";
-
-const categories = [
-"Tazas",
-"Remeras",
-"Set De Jardín",
-"Llaveros",
-"Pines",
-];
-
-const emptyForm = {
-name: "",
-category: "Tazas",
-description: "",
-price: "",
-image_url: "",
-featured: false,
-is_active: false,
-};
-
+import { useEffect, useState, type FormEvent } from "react"; import { supabase } from "@/lib/supabase"; import { formatPrice, type Product } from "@/lib/products";
+const categories = [ "Tazas", "Remeras", "Set De Jardín", "Llaveros", "Pines", ];
+const emptyForm = { name: "", category: "Tazas", description: "", price: "", image_url: "", featured: false, is_active: false, };
 type ProductForm = typeof emptyForm;
-
-const inputStyle = {
-width: "100%",
-padding: "12px",
-border: "1px solid #e5dce5",
-borderRadius: "10px",
-fontSize: "15px",
-boxSizing: "border-box" as const,
-background: "#fff",
-};
-
-const buttonStyle = {
-padding: "11px 16px",
-border: "none",
-borderRadius: "10px",
-cursor: "pointer",
-fontWeight: 700,
-fontSize: "14px",
-};
-
-export default function AdminPage() {
-const [sessionReady, setSessionReady] = useState(false);
-const [email, setEmail] = useState("");
-const [password, setPassword] = useState("");
-const [loggedIn, setLoggedIn] = useState(false);
-const [authorized, setAuthorized] = useState(false);
-const [products, setProducts] = useState<Product[]>([]);
-const [form, setForm] = useState<ProductForm>(emptyForm);
-const [editingId, setEditingId] = useState<string | null>(null);
-const [selectedImage, setSelectedImage] = useState<File | null>(null);
-const [loading, setLoading] = useState(false);
-const [message, setMessage] = useState("");
-const [error, setError] = useState("");
-
-useEffect(() => {
-if (!supabase) {
-setError("Falta configurar Supabase. Revisá las variables de entorno.");
-setSessionReady(true);
-return;
-}
-
+const inputStyle = { width: "100%", padding: "12px", border: "1px solid #e5dce5", borderRadius: "10px", fontSize: "15px", boxSizing: "border-box" as const, background: "#fff", };
+const buttonStyle = { padding: "11px 16px", border: "none", borderRadius: "10px", cursor: "pointer", fontWeight: 700, fontSize: "14px", };
+export default function AdminPage() { const [sessionReady, setSessionReady] = useState(false); const [email, setEmail] = useState(""); const [password, setPassword] = useState(""); const [loggedIn, setLoggedIn] = useState(false); const [authorized, setAuthorized] = useState(false); const [products, setProducts] = useState<Product[]>([]); const [form, setForm] = useState(emptyForm); const [editingId, setEditingId] = useState<string | null>(null); const [selectedImage, setSelectedImage] = useState<File | null>(null); const [loading, setLoading] = useState(false); const [message, setMessage] = useState(""); const [error, setError] = useState("");
+useEffect(() => { if (!supabase) { setError("Falta configurar Supabase. Revisá las variables de entorno."); setSessionReady(true); return; }
 let mounted = true;
 
 async function checkSession() {
@@ -125,12 +68,8 @@ return () => {
   mounted = false;
   subscription.unsubscribe();
 };
-
 }, []);
-
-async function login(event: FormEvent<HTMLFormElement>) {
-event.preventDefault();
-
+async function login(event: FormEvent) { event.preventDefault();
 if (!supabase) {
   setError("Supabase no está configurado.");
   return;
@@ -168,12 +107,8 @@ setAuthorized(true);
 await refreshProducts();
 setMessage("¡Sesión iniciada correctamente!");
 setLoading(false);
-
 }
-
-async function refreshProducts() {
-if (!supabase) return;
-
+async function refreshProducts() { if (!supabase) return;
 const { data, error: loadError } = await supabase
   .from("products")
   .select(
@@ -187,37 +122,10 @@ if (loadError) {
 }
 
 setProducts((data ?? []) as Product[]);
-
 }
-
-function editProduct(product: Product) {
-setEditingId(product.id);
-setForm({
-name: product.name,
-category: product.category,
-description: product.description ?? "",
-price: String(product.price),
-image_url: product.image_url ?? "",
-featured: product.featured,
-is_active: product.is_active,
-});
-setSelectedImage(null);
-setMessage("");
-setError("");
-window.scrollTo({ top: 0, behavior: "smooth" });
-}
-
-function resetForm() {
-setEditingId(null);
-setForm(emptyForm);
-setSelectedImage(null);
-setMessage("");
-setError("");
-}
-
-async function saveProduct(event: FormEvent<HTMLFormElement>) {
-event.preventDefault();
-
+function editProduct(product: Product) { setEditingId(product.id); setForm({ name: product.name, category: product.category, description: product.description ?? "", price: String(product.price), image_url: product.image_url ?? "", featured: product.featured, is_active: product.is_active, }); setSelectedImage(null); setMessage(""); setError(""); window.scrollTo({ top: 0, behavior: "smooth" }); }
+function resetForm() { setEditingId(null); setForm(emptyForm); setSelectedImage(null); setMessage(""); setError(""); }
+async function saveProduct(event: FormEvent) { event.preventDefault();
 if (!supabase || !authorized) return;
 
 const price = Number(form.price);
@@ -293,12 +201,8 @@ setMessage(
     : "Producto agregado correctamente."
 );
 setLoading(false);
-
 }
-
-async function toggleActive(product: Product) {
-if (!supabase || !authorized) return;
-
+async function toggleActive(product: Product) { if (!supabase || !authorized) return;
 setError("");
 setMessage("");
 
@@ -314,12 +218,8 @@ if (updateError) {
 
 await refreshProducts();
 setMessage("Estado del producto actualizado.");
-
 }
-
-async function deleteProduct(product: Product) {
-if (!supabase || !authorized) return;
-
+async function deleteProduct(product: Product) { if (!supabase || !authorized) return;
 const confirmed = window.confirm(
   `¿Querés eliminar el producto "${product.name}"? Esta acción no se puede deshacer.`
 );
@@ -343,12 +243,8 @@ if (editingId === product.id) resetForm();
 
 await refreshProducts();
 setMessage("Producto eliminado. La imagen almacenada no se borró.");
-
 }
-
-async function logout() {
-if (!supabase) return;
-
+async function logout() { if (!supabase) return;
 await supabase.auth.signOut();
 setLoggedIn(false);
 setAuthorized(false);
@@ -356,50 +252,9 @@ setProducts([]);
 resetForm();
 setMessage("");
 setError("");
-
 }
-
-if (!sessionReady) {
-return (
-<main style={{ padding: 32, fontFamily: "Arial, sans-serif" }}>
-Cargando panel de administración...
-</main>
-);
-}
-
-if (!loggedIn || !authorized) {
-return (
-<main
-style={{
-minHeight: "100vh",
-padding: "32px 16px",
-background: "linear-gradient(135deg,#fff4f8,#f5f0ff)",
-display: "grid",
-placeItems: "center",
-fontFamily: "Arial, sans-serif",
-boxSizing: "border-box",
-}}
->
-<form
-onSubmit={login}
-style={{
-background: "#fff",
-padding: 30,
-borderRadius: 20,
-boxShadow: "0 12px 40px #6e46651c",
-width: "100%",
-maxWidth: 420,
-boxSizing: "border-box",
-}}
->
-<div style={{ fontSize: 34, marginBottom: 8 }}>🎨</div>
-<h1 style={{ color: "#543b56", margin: "0 0 8px" }}>
-Tu Sublimación Creativa
-</h1>
-<p style={{ color: "#776a78", marginBottom: 24 }}>
-Panel privado de administración
-</p>
-
+if (!sessionReady) { return ( <main style={{ padding: 32, fontFamily: "Arial, sans-serif" }}> Cargando panel de administración...  ); }
+if (!loggedIn || !authorized) { return ( <main style={{ minHeight: "100vh", padding: "32px 16px", background: "linear-gradient(135deg,#fff4f8,#f5f0ff)", display: "grid", placeItems: "center", fontFamily: "Arial, sans-serif", boxSizing: "border-box", }} > <form onSubmit={login} style={{ background: "#fff", padding: 30, borderRadius: 20, boxShadow: "0 12px 40px #6e46651c", width: "100%", maxWidth: 420, boxSizing: "border-box", }} > <div style={{ fontSize: 34, marginBottom: 8 }}>🎨 <h1 style={{ color: "#543b56", margin: "0 0 8px" }}> Tu Sublimación Creativa  <p style={{ color: "#776a78", marginBottom: 24 }}> Panel privado de administración 
       <label style={{ display: "block", marginBottom: 6 }}>
         Correo electrónico
       </label>
@@ -448,42 +303,8 @@ Panel privado de administración
     </form>
   </main>
 );
-
 }
-
-return (
-<main
-style={{
-minHeight: "100vh",
-padding: "24px 16px 60px",
-background: "#faf7fb",
-color: "#352c39",
-fontFamily: "Arial, sans-serif",
-}}
->
-<div style={{ maxWidth: 1100, margin: "0 auto" }}>
-<header
-style={{
-display: "flex",
-flexWrap: "wrap",
-justifyContent: "space-between",
-alignItems: "center",
-gap: 16,
-marginBottom: 28,
-}}
->
-<div>
-<p style={{ color: "#d94f91", fontWeight: 700, marginBottom: 6 }}>
-ADMINISTRACIÓN
-</p>
-<h1 style={{ margin: 0, fontSize: 30 }}>
-Tu Sublimación Creativa 🎨
-</h1>
-<p style={{ color: "#776a78" }}>
-Gestioná tu catálogo de productos.
-</p>
-</div>
-
+return ( <main style={{ minHeight: "100vh", padding: "24px 16px 60px", background: "#faf7fb", color: "#352c39", fontFamily: "Arial, sans-serif", }} > <div style={{ maxWidth: 1100, margin: "0 auto" }}> <header style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: 16, marginBottom: 28, }} >  <p style={{ color: "#d94f91", fontWeight: 700, marginBottom: 6 }}> ADMINISTRACIÓN  <h1 style={{ margin: 0, fontSize: 30 }}> Tu Sublimación Creativa 🎨  <p style={{ color: "#776a78" }}> Gestioná tu catálogo de productos.  
       <button
         onClick={logout}
         style={{ ...buttonStyle, background: "#eee5ef", color: "#543b56" }}
@@ -845,4 +666,30 @@ Gestioná tu catálogo de productos.
                     color: "#543b56",
                   }}
                 >
-          
+                  {product.is_active ? "Ocultar" : "Publicar"}
+                </button>
+
+                <button
+                  onClick={() => deleteProduct(product)}
+                  style={{
+                    ...buttonStyle,
+                    background: "#fff0f0",
+                    color: "#a52727",
+                  }}
+                >
+                  Eliminar
+                </button>
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
+    </section>
+
+    <p style={{ color: "#887c89", fontSize: 12, marginTop: 28 }}>
+      Las imágenes reemplazadas o los archivos de productos eliminados
+      permanecen en Storage para evitar borrar archivos por error.
+    </p>
+  </div>
+</main>
+); }
