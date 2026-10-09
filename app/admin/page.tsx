@@ -156,6 +156,40 @@ if (loadError) {
 
 setProducts((data ?? []) as Product[]);
 }
+async function addCategory() {
+  if (!supabase || !authorized) return;
+
+  const name = newCategory.trim();
+
+  if (!name) {
+    setError("Escribí el nombre de la categoría.");
+    return;
+  }
+
+  setSavingCategory(true);
+  setError("");
+  setMessage("");
+
+  const { error: insertError } = await supabase
+    .from("categories")
+    .insert({ name });
+
+  if (insertError) {
+    setError(
+      insertError.code === "23505"
+        ? "Esa categoría ya existe."
+        : "No se pudo guardar la categoría: " +
+            insertError.message
+    );
+    setSavingCategory(false);
+    return;
+  }
+
+  await refreshCategories();
+  setNewCategory("");
+  setMessage("¡Categoría agregada correctamente!");
+  setSavingCategory(false);
+}                                     
 function editProduct(product: Product) { setEditingId(product.id); setForm({ name: product.name, category: product.category, description: product.description ?? "", price: String(product.price), image_url: product.image_url ?? "", featured: product.featured, is_active: product.is_active, }); setSelectedImage(null); setMessage(""); setError(""); window.scrollTo({ top: 0, behavior: "smooth" }); }
 function resetForm() { setEditingId(null); setForm(emptyForm); setSelectedImage(null); setMessage(""); setError(""); }
 async function saveProduct(event: FormEvent) { event.preventDefault();
