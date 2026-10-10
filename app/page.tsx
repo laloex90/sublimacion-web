@@ -6,10 +6,29 @@ import { categories as defaultCategories, demoProducts, formatPrice, type Produc
 import { supabase } from "@/lib/supabase";
 
 type Category = { name: string; icon_emoji: string | null; icon_image_url: string | null };
-type SiteSettings = { hero_title: string; hero_subtitle: string; hero_image_url: string | null; hero_button_text: string; hero_button_url: string };
+
+type SiteSettings = {
+  hero_title: string;
+  hero_subtitle: string;
+  hero_image_url: string | null;
+  hero_button_text: string;
+  hero_button_url: string;
+  facebook_url: string;
+  instagram_url: string;
+};
+
 type PortfolioItem = { id: string; title: string; description: string; category: string; image_url: string; is_active: boolean; is_featured: boolean; sort_order: number };
 const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "5493624642189";
-const defaultSettings: SiteSettings = { hero_title: "Regalos únicos, hechos a tu estilo", hero_subtitle: "Personalizá tus momentos con productos de sublimación llenos de color, creatividad y cariño.", hero_image_url: null, hero_button_text: "Ver catálogo", hero_button_url: "#catalogo" };
+
+const defaultSettings: SiteSettings = {
+  hero_title: "Regalos únicos, hechos a tu estilo",
+  hero_subtitle: "Personalizá tus momentos con productos de sublimación llenos de color, creatividad y cariño.",
+  hero_image_url: null,
+  hero_button_text: "Ver catálogo",
+  hero_button_url: "#catalogo",
+  facebook_url: "https://www.facebook.com/sublimacion.creativa.667600",
+  instagram_url: "https://instagram.com/tusublicretiva?dlrf=OXoyMHMyMjNqcDBp"
+};
 
 export default function Home() {
   const [products, setProducts] = useState<Product[]>(demoProducts);
@@ -27,12 +46,23 @@ export default function Home() {
       const [productResult, categoryResult, settingsResult, portfolioResult] = await Promise.all([
         supabase.from("products").select("id,name,category,description,price,image_url,featured,is_active").eq("is_active", true).order("created_at", { ascending: false }),
         supabase.from("categories").select("name,icon_emoji,icon_image_url").eq("is_active", true).order("name", { ascending: true }),
-        supabase.from("site_settings").select("hero_title,hero_subtitle,hero_image_url,hero_button_text,hero_button_url").eq("id", 1).maybeSingle(),
+        
+supabase.from("site_settings").select("hero_title,hero_subtitle,hero_image_url,hero_button_text,hero_button_url,facebook_url,instagram_url").eq("id", 1).maybeSingle(),
+
         supabase.from("portfolio_items").select("id,title,description,category,image_url,is_active,is_featured,sort_order").eq("is_active", true).order("sort_order", { ascending: true }).order("created_at", { ascending: false }),
       ]);
       if (!productResult.error && productResult.data?.length) setProducts(productResult.data as Product[]);
       if (!categoryResult.error && categoryResult.data?.length) setCategoryItems(categoryResult.data as Category[]);
-      if (!settingsResult.error && settingsResult.data) setSettings(settingsResult.data as SiteSettings);
+      
+if (!settingsResult.error && settingsResult.data) {
+  setSettings({
+    ...defaultSettings,
+    ...settingsResult.data,
+    facebook_url: settingsResult.data.facebook_url || "",
+    instagram_url: settingsResult.data.instagram_url || ""
+  } as SiteSettings);
+}
+
       if (!portfolioResult.error && portfolioResult.data) setPortfolio(portfolioResult.data as PortfolioItem[]);
     }
     loadContent();
@@ -121,7 +151,84 @@ export default function Home() {
 
     <section className="cart-panel section" id="carrito"><div><span className="section-kicker">TU SELECCIÓN</span><h2>Tu carrito <span>♡</span></h2><p>Agregá productos y enviá tu consulta por WhatsApp.</p></div>{cart.length ? <><ul className="cart-list">{cart.map((item, i) => <li key={`${item.id}-${i}`}><span>{item.name}</span><b>{formatPrice(item.price)}</b><button aria-label="Quitar producto" onClick={() => setCart(current => current.filter((_, index) => index !== i))}>×</button></li>)}</ul><div className="cart-total"><b>Total estimado: {formatPrice(cart.reduce((sum, item) => sum + item.price, 0))}</b><a className="button button-green" href={whatsappLink(cart)} target="_blank" rel="noreferrer"><MessageCircle size={18}/> Enviar pedido por WhatsApp</a></div></> : <div className="cart-empty"><ShoppingCart/><span>Tu carrito está esperando tus favoritos.</span><a href="#catalogo">Explorar productos <ArrowRight size={15}/></a></div>}</section>
 
-    <footer id="contacto"><div className="footer-brand"><span className="brand-mark"><Palette size={25}/></span><span className="brand-text"><b>Tu Sublimación</b><strong>Creativa</strong></span></div><p>Tu idea, nuestro trabajo. ♡</p><a className="button button-green" href={`https://wa.me/${whatsappNumber}`} target="_blank" rel="noreferrer"><MessageCircle size={18}/> Hablemos por WhatsApp</a><small>© {new Date().getFullYear()} Tu Sublimación Creativa · Todos los derechos reservados.</small></footer>
-    <a className="floating-whatsapp" href={`https://wa.me/${whatsappNumber}`} aria-label="Contactar por WhatsApp" target="_blank" rel="noreferrer"><MessageCircle/></a>
-  </main>;
-}
+    
+<footer id="contacto">
+  <div className="footer-brand">
+    <span className="brand-mark"><Palette size={25}/></span>
+    <span className="brand-text">
+      <b>Tu Sublimación</b>
+      <strong>Creativa</strong>
+    </span>
+  </div>
+
+  <p>Tu idea, nuestro trabajo. ♡</p>
+
+  <a
+    className="button button-green"
+    href={`https://wa.me/${whatsappNumber}`}
+    target="_blank"
+    rel="noreferrer"
+  >
+    <MessageCircle size={18}/> Hablemos por WhatsApp
+  </a>
+
+  <div style={{
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 18,
+    margin: "20px 0"
+  }}>
+    {settings.facebook_url && (
+      <a
+        href={settings.facebook_url}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Visitar Facebook"
+        title="Facebook"
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 8,
+          color: "#1877F2",
+          fontWeight: 700,
+          textDecoration: "none"
+        }}
+      >
+        <svg width="25" height="25" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047V9.413c0-3.025 1.792-4.697 4.533-4.697 1.312 0 2.686.236 2.686.236v2.973h-1.513c-1.49 0-1.956.93-1.956 1.886v2.262h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z"/>
+        </svg>
+        Facebook
+      </a>
+    )}
+
+    {settings.instagram_url && (
+      <a
+        href={settings.instagram_url}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Visitar Instagram"
+        title="Instagram"
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 8,
+          color: "#C13584",
+          fontWeight: 700,
+          textDecoration: "none"
+        }}
+      >
+        <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <rect x="3" y="3" width="18" height="18" rx="5"/>
+          <circle cx="12" cy="12" r="4"/>
+          <circle cx="17.5" cy="6.5" r="0.8" fill="currentColor" stroke="none"/>
+        </svg>
+        Instagram
+      </a>
+    )}
+  </div>
+
+  <small>
+    © {new Date().getFullYear()} Tu Sublimación Creativa · Todos los derechos reservados.
+  </small>
+</footer>
