@@ -1,4 +1,4 @@
-lo"use client";
+"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { ArrowRight, Check, Heart, Menu, Palette, Search, ShoppingCart, Sparkles, Truck, MessageCircle, X } from "lucide-react";
