@@ -53,6 +53,7 @@ export default function AdminPage() {
   facebook_url: "https://www.facebook.com/sublimacion.creativa.667600",
   instagram_url: "https://instagram.com/tusublicretiva?dlrf=OXoyMHMyMjNqcDBp"
 });
+const [heroImage, setHeroImage] = useState<File | null>(null);
   const [portfolio, setPortfolio] = useState<PortfolioItem[]>([]);
   const [portfolioForm, setPortfolioForm] = useState({ ...emptyPortfolio });
   const [portfolioImage, setPortfolioImage] = useState<File | null>(null);
