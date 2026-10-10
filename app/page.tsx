@@ -1,4 +1,4 @@
-"use client";
+lo"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { ArrowRight, Check, Heart, Menu, Palette, Search, ShoppingCart, Sparkles, Truck, MessageCircle, X } from "lucide-react";
@@ -154,7 +154,9 @@ if (!settingsResult.error && settingsResult.data) {
     
 <footer id="contacto">
   <div className="footer-brand">
-    <span className="brand-mark"><Palette size={25}/></span>
+    <span className="brand-mark">
+      <Palette size={25} />
+    </span>
     <span className="brand-text">
       <b>Tu Sublimación</b>
       <strong>Creativa</strong>
@@ -169,16 +171,19 @@ if (!settingsResult.error && settingsResult.data) {
     target="_blank"
     rel="noreferrer"
   >
-    <MessageCircle size={18}/> Hablemos por WhatsApp
+    <MessageCircle size={18} />
+    Hablemos por WhatsApp
   </a>
 
-  <div style={{
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 18,
-    margin: "20px 0"
-  }}>
+  <div
+    style={{
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      gap: 18,
+      margin: "20px 0",
+    }}
+  >
     {settings.facebook_url && (
       <a
         href={settings.facebook_url}
@@ -192,11 +197,17 @@ if (!settingsResult.error && settingsResult.data) {
           gap: 8,
           color: "#1877F2",
           fontWeight: 700,
-          textDecoration: "none"
+          textDecoration: "none",
         }}
       >
-        <svg width="25" height="25" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-          <path d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047V9.413c0-3.025 1.792-4.697 4.533-4.697 1.312 0 2.686.236 2.686.236v2.973h-1.513c-1.49 0-1.956.93-1.956 1.886v2.262h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z"/>
+        <svg
+          width="25"
+          height="25"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          aria-hidden="true"
+        >
+          <path d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047V9.413c0-3.025 1.792-4.697 4.533-4.697 1.312 0 2.686.236 2.686.236v2.973h-1.513c-1.49 0-1.956.93-1.956 1.886v2.262h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z" />
         </svg>
         Facebook
       </a>
@@ -215,13 +226,29 @@ if (!settingsResult.error && settingsResult.data) {
           gap: 8,
           color: "#C13584",
           fontWeight: 700,
-          textDecoration: "none"
+          textDecoration: "none",
         }}
       >
-        <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <rect x="3" y="3" width="18" height="18" rx="5"/>
-          <circle cx="12" cy="12" r="4"/>
-          <circle cx="17.5" cy="6.5" r="0.8" fill="currentColor" stroke="none"/>
+        <svg
+          width="25"
+          height="25"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <rect x="3" y="3" width="18" height="18" rx="5" />
+          <circle cx="12" cy="12" r="4" />
+          <circle
+            cx="17.5"
+            cy="6.5"
+            r="0.8"
+            fill="currentColor"
+            stroke="none"
+          />
         </svg>
         Instagram
       </a>
@@ -232,3 +259,15 @@ if (!settingsResult.error && settingsResult.data) {
     © {new Date().getFullYear()} Tu Sublimación Creativa · Todos los derechos reservados.
   </small>
 </footer>
+
+<a
+  className="floating-whatsapp"
+  href={`https://wa.me/${whatsappNumber}`}
+  target="_blank"
+  rel="noreferrer"
+  aria-label="Contactar por WhatsApp"
+>
+  <MessageCircle size={26} />
+</a>
+);
+}
