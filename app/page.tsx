@@ -269,5 +269,5 @@ if (!settingsResult.error && settingsResult.data) {
 >
   <MessageCircle size={26} />
 </a>
-);
+  </main>;
 }
