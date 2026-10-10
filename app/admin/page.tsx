@@ -9,7 +9,7 @@ import { formatPrice, type Product } from "@/lib/products";
 const db = supabase!;
 
 type Category = { name: string; icon_emoji: string | null; icon_image_url: string | null };
-type SiteSettings = { hero_title: string; hero_subtitle: string; hero_image_url: string | null; hero_button_text: string; hero_button_url: string };
+type SiteSettings = { hero_title: string; hero_subtitle: string; hero_image_url: string | null; hero_button_text: string; hero_button_url: string; facebook_url: string; instagram_url: string };
 type PortfolioItem = { id: string; title: string; description: string; category: string; image_url: string; is_active: boolean; is_featured: boolean; sort_order: number };
 
 const defaultCategories: Category[] = [
@@ -44,8 +44,15 @@ export default function AdminPage() {
   const [form, setForm] = useState({ ...emptyProduct });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [productImage, setProductImage] = useState<File | null>(null);
-  const [settings, setSettings] = useState<SiteSettings>({ hero_title: "Regalos únicos, hechos a tu estilo", hero_subtitle: "Personalizá tus momentos con productos de sublimación llenos de color, creatividad y cariño.", hero_image_url: "", hero_button_text: "Ver catálogo", hero_button_url: "#catalogo" });
-  const [heroImage, setHeroImage] = useState<File | null>(null);
+  const [settings, setSettings] = useState<SiteSettings>({
+  hero_title: "Regalos únicos, hechos a tu estilo",
+  hero_subtitle: "Personalizá tus momentos con productos de sublimación llenos de color, creatividad y cariño.",
+  hero_image_url: "",
+  hero_button_text: "Ver catálogo",
+  hero_button_url: "#catalogo",
+  facebook_url: "https://www.facebook.com/sublimacion.creativa.667600",
+  instagram_url: "https://instagram.com/tusublicretiva?dlrf=OXoyMHMyMjNqcDBp"
+});
   const [portfolio, setPortfolio] = useState<PortfolioItem[]>([]);
   const [portfolioForm, setPortfolioForm] = useState({ ...emptyPortfolio });
   const [portfolioImage, setPortfolioImage] = useState<File | null>(null);
@@ -87,9 +94,20 @@ export default function AdminPage() {
     if (!e && data) setCategories(data as Category[]);
   }
   async function loadSettings() {
-    const { data, error: e } = await db.from("site_settings").select("hero_title,hero_subtitle,hero_image_url,hero_button_text,hero_button_url").eq("id", 1).maybeSingle();
-    if (!e && data) setSettings(data as SiteSettings);
+  const { data, error: e } = await db
+    .from("site_settings")
+    .select("hero_title,hero_subtitle,hero_image_url,hero_button_text,hero_button_url,facebook_url,instagram_url")
+    .eq("id", 1)
+    .maybeSingle();
+
+  if (!e && data) {
+    setSettings({
+      ...data,
+      facebook_url: data.facebook_url || "",
+      instagram_url: data.instagram_url || ""
+    } as SiteSettings);
   }
+}
   async function loadPortfolio() {
     const { data, error: e } = await db.from("portfolio_items").select("id,title,description,category,image_url,is_active,is_featured,sort_order").order("sort_order", { ascending: true }).order("created_at", { ascending: false });
     if (!e && data) setPortfolio(data as PortfolioItem[]);
@@ -185,7 +203,36 @@ export default function AdminPage() {
   return <main style={{ minHeight: "100vh", background: "#f6f8fd", padding: "20px 14px 50px", color: "#192b50", fontFamily: "Arial,sans-serif" }}><div style={{ maxWidth: 1000, margin: "auto" }}><header style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: 12, marginBottom: 20 }}><div><h1 style={{ margin: "0 0 5px", fontSize: 28 }}>Tu Sublimación Creativa</h1><p style={{ margin: 0, color: "#6d7891" }}>Panel de administración</p></div><div style={{ display: "flex", gap: 8 }}><a href="/" target="_blank" rel="noreferrer" style={{ ...secondaryButton, display: "inline-block" }}>Ver sitio ↗</a><button style={secondaryButton} onClick={logout}>Cerrar sesión</button></div></header>
   {message && <p role="status" style={{ background: "#e8fff4", color: "#08794e", padding: 12, borderRadius: 9 }}>{message}</p>}{error && <p role="alert" style={{ background: "#fff0f4", color: "#b42355", padding: 12, borderRadius: 9 }}>{error}</p>}
 
-  <section style={panel}><h2 style={{ marginTop: 0 }}>🖼️ Portada de la página principal</h2><form onSubmit={saveSiteSettings}><label style={label}>Título<input style={inputStyle} value={settings.hero_title} onChange={e => setSettings({ ...settings, hero_title: e.target.value })} required /></label><label style={label}>Texto descriptivo<textarea style={{ ...inputStyle, minHeight: 85 }} value={settings.hero_subtitle} onChange={e => setSettings({ ...settings, hero_subtitle: e.target.value })} /></label><label style={label}>Texto del botón<input style={inputStyle} value={settings.hero_button_text} onChange={e => setSettings({ ...settings, hero_button_text: e.target.value })} /></label><label style={label}>Destino del botón (por ejemplo #catalogo o un enlace)<input style={inputStyle} value={settings.hero_button_url} onChange={e => setSettings({ ...settings, hero_button_url: e.target.value })} /></label><label style={label}>Imagen de portada<input style={inputStyle} type="file" accept="image/*" onChange={e => setHeroImage(e.target.files?.[0] || null)} /></label>{settings.hero_image_url && <p><a href={settings.hero_image_url} target="_blank" rel="noreferrer">Ver imagen actual</a></p>}<button style={buttonStyle} disabled={busy}>{busy ? "Guardando…" : "Guardar portada"}</button></form></section>
+  <section style={panel}><h2 style={{ marginTop: 0 }}>🖼️ Portada de la página principal</h2><form onSubmit={saveSiteSettings}><label style={label}>Título<input style={inputStyle} value={settings.hero_title} onChange={e => setSettings({ ...settings, hero_title: e.target.value })} required /></label><label style={label}>Texto descriptivo<textarea style={{ ...inputStyle, minHeight: 85 }} value={settings.hero_subtitle} onChange={e => setSettings({ ...settings, hero_subtitle: e.target.value })} /></label><label style={label}>Texto del botón<input style={inputStyle} value={settings.hero_button_text} onChange={e => setSettings({ ...settings, hero_button_text: e.target.value })} /></label><label style={label}>Destino del botón (por ejemplo #catalogo o un enlace)<input style={inputStyle} value={settings.hero_button_url} onChange={e => setSettings({ ...settings, hero_button_url: e.target.value })} /></label><label style={label}>Imagen de portada<input style={inputStyle} type="file" accept="image/*" onChange={e => setHeroImage(e.target.files?.[0] || null)} /></label>{settings.hero_image_url && <p><a href={settings.hero_image_url} target="_blank" rel="noreferrer">Ver imagen actual</a></p>}
+
+<h3>Redes sociales</h3>
+
+<label style={label}>
+  Enlace de Facebook
+  <input
+    style={inputStyle}
+    type="url"
+    value={settings.facebook_url}
+    onChange={e =>
+      setSettings({ ...settings, facebook_url: e.target.value })
+    }
+    placeholder="https://www.facebook.com/tu-pagina"
+  />
+</label>
+
+<label style={label}>
+  Enlace de Instagram
+  <input
+    style={inputStyle}
+    type="url"
+    value={settings.instagram_url}
+    onChange={e =>
+      setSettings({ ...settings, instagram_url: e.target.value })
+    }
+    placeholder="https://www.instagram.com/tu-perfil"
+  />
+</label>
+<button style={buttonStyle} disabled={busy}>{busy ? "Guardando…" : "Guardar portada"}</button></form></section>
 
   <section style={panel}><h2 style={{ marginTop: 0 }}>✨ Administrar categorías e iconos</h2><p style={{ color: "#6d7891", fontSize: 13 }}>Podés usar un emoji o subir una imagen para representar cada categoría.</p><form onSubmit={addCategory} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 8, alignItems: "end" }}><label style={label}>Nombre<input style={inputStyle} value={newCategory} onChange={e => setNewCategory(e.target.value)} placeholder="Ej.: Botellas" required /></label><label style={label}>Emoji<input style={inputStyle} value={categoryEmoji} onChange={e => setCategoryEmoji(e.target.value)} maxLength={8} /></label><label style={label}>Imagen del icono (opcional)<input style={inputStyle} type="file" accept="image/*" onChange={e => setCategoryImage(e.target.files?.[0] || null)} /></label><button style={{ ...buttonStyle, marginBottom: 12 }} disabled={busy}>Agregar categoría</button></form><div style={{ display: "grid", gap: 10 }}>{categories.map(c => <div key={c.name} style={{ border: "1px solid #e5eaf4", borderRadius: 11, padding: 12, display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10 }}><div style={{ width: 45, height: 45, display: "grid", placeItems: "center", background: "#f5f7fc", borderRadius: 10, fontSize: 27, overflow: "hidden" }}>{c.icon_image_url ? <img src={c.icon_image_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : c.icon_emoji || "✨"}</div><b style={{ flex: 1 }}>{c.name}</b>{editingCategory === c.name ? <div style={{ flex: "1 1 280px", display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}><input aria-label="Emoji" value={categoryEditEmoji} onChange={e => setCategoryEditEmoji(e.target.value)} style={{ ...inputStyle, width: 85, margin: 0 }} /><input aria-label="Imagen del icono" type="file" accept="image/*" onChange={e => setCategoryEditImage(e.target.files?.[0] || null)} style={{ maxWidth: 180 }} /><button style={buttonStyle} onClick={() => saveCategoryIcon(c.name)} disabled={busy}>Guardar</button><button style={secondaryButton} onClick={() => setEditingCategory(null)}>Cancelar</button></div> : <><button style={secondaryButton} onClick={() => { setEditingCategory(c.name); setCategoryEditEmoji(c.icon_emoji || "✨"); setCategoryEditImage(null); }}>Editar icono</button><button style={{ ...buttonStyle, background: "#fff0f4", color: "#b42355" }} onClick={() => deleteCategory(c.name)}>Eliminar</button></>}</div>)}</div></section>
 
