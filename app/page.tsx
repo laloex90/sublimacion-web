@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { ArrowRight, Check, Heart, Menu, Palette, Search, ShoppingCart, Sparkles, Truck, MessageCircle, X } from "lucide-react";
-import { categories as defaultCategories, demoProducts, formatPrice, type Product } from "@/lib/products";
+import { categories as defaultCategories, formatPrice, type Product } from "@/lib/products";
 import { supabase } from "@/lib/supabase";
 
 type Category = { name: string; icon_emoji: string | null; icon_image_url: string | null };
@@ -97,27 +97,38 @@ const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
     [portfolio, activePortfolioCategory, portfolioSearch]);
 
   useEffect(() => {
-    if (!selectedPortfolioItem) return;
+if (!selectedPortfolioItem) return;
+
+const closeOnEscape = (event: KeyboardEvent) => {
+  if (event.key === "Escape") setSelectedPortfolioItem(null);
+};
+
+document.addEventListener("keydown", closeOnEscape);
+document.body.style.overflow = "hidden";
+
+return () => {
+  document.removeEventListener("keydown", closeOnEscape);
+  document.body.style.overflow = "";
+};
+
+}, [selectedPortfolioItem]);
+
 useEffect(() => {
-  if (!selectedProduct) return;
+if (!selectedProduct) return;
 
-  const closeOnEscape = (event: KeyboardEvent) => {
-    if (event.key === "Escape") setSelectedProduct(null);
-  };
+const closeOnEscape = (event: KeyboardEvent) => {
+  if (event.key === "Escape") setSelectedProduct(null);
+};
 
-  document.addEventListener("keydown", closeOnEscape);
-  document.body.style.overflow = "hidden";
+document.addEventListener("keydown", closeOnEscape);
+document.body.style.overflow = "hidden";
 
-  return () => {
-    document.removeEventListener("keydown", closeOnEscape);
-    document.body.style.overflow = "";
-  };
+return () => {
+  document.removeEventListener("keydown", closeOnEscape);
+  document.body.style.overflow = "";
+};
+
 }, [selectedProduct]);
-    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === "Escape") setSelectedPortfolioItem(null); };
-    document.addEventListener("keydown", closeOnEscape);
-    document.body.style.overflow = "hidden";
-    return () => { document.removeEventListener("keydown", closeOnEscape); document.body.style.overflow = ""; };
-  }, [selectedPortfolioItem]);
   const visibleProducts = useMemo(() => products.filter(product => {
     const categoryMatch = activeCategory === "Todos" || product.category === activeCategory;
     const searchMatch = `${product.name} ${product.category} ${product.description}`.toLowerCase().includes(search.toLowerCase());
