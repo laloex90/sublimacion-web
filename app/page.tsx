@@ -31,7 +31,7 @@ const defaultSettings: SiteSettings = {
 };
 
 export default function Home() {
-  const [products, setProducts] = useState<Product[]>(demoProducts);
+  const [products, setProducts] = useState<Product[]>([]);
   const [categoryItems, setCategoryItems] = useState<Category[]>(defaultCategories.map((name, i) => ({ name, icon_emoji: ["☕", "👕", "🌱", "🔑", "📌"][i] || "✨", icon_image_url: null })));
   const [settings, setSettings] = useState<SiteSettings>(defaultSettings);
   const [portfolio, setPortfolio] = useState<PortfolioItem[]>([]);
@@ -51,7 +51,7 @@ supabase.from("site_settings").select("hero_title,hero_subtitle,hero_image_url,h
 
         supabase.from("portfolio_items").select("id,title,description,category,image_url,is_active,is_featured,sort_order").eq("is_active", true).order("sort_order", { ascending: true }).order("created_at", { ascending: false }),
       ]);
-      if (!productResult.error && productResult.data?.length) setProducts(productResult.data as Product[]);
+      if (!productResult.error) setProducts((productResult.data || []) as Product[]);
       if (!categoryResult.error && categoryResult.data?.length) setCategoryItems(categoryResult.data as Category[]);
       
 if (!settingsResult.error && settingsResult.data) {
