@@ -72,6 +72,7 @@ if (!settingsResult.error && settingsResult.data) {
   const [activePortfolioCategory, setActivePortfolioCategory] = useState("Todos");
   const [portfolioSearch, setPortfolioSearch] = useState("");
   const [selectedPortfolioItem, setSelectedPortfolioItem] = useState<PortfolioItem | null>(null);
+const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [likedPortfolioIds, setLikedPortfolioIds] = useState<string[]>([]);
 
   useEffect(() => {
@@ -97,6 +98,21 @@ if (!settingsResult.error && settingsResult.data) {
 
   useEffect(() => {
     if (!selectedPortfolioItem) return;
+useEffect(() => {
+  if (!selectedProduct) return;
+
+  const closeOnEscape = (event: KeyboardEvent) => {
+    if (event.key === "Escape") setSelectedProduct(null);
+  };
+
+  document.addEventListener("keydown", closeOnEscape);
+  document.body.style.overflow = "hidden";
+
+  return () => {
+    document.removeEventListener("keydown", closeOnEscape);
+    document.body.style.overflow = "";
+  };
+}, [selectedProduct]);
     const closeOnEscape = (event: KeyboardEvent) => { if (event.key === "Escape") setSelectedPortfolioItem(null); };
     document.addEventListener("keydown", closeOnEscape);
     document.body.style.overflow = "hidden";
@@ -140,12 +156,81 @@ if (!settingsResult.error && settingsResult.data) {
 
     <section className="section catalog-section" id="catalogo"><div className="section-heading"><div><span className="section-kicker">HECHOS PARA VOS</span><h2>Productos destacados <span>✦</span></h2><p>Elegí tu favorito y consultanos cómo personalizarlo.</p></div><span className="product-count">{visibleProducts.length} productos</span></div>
       <div className="filters"><button className={activeCategory === "Todos" ? "filter active" : "filter"} onClick={() => setActiveCategory("Todos")}>Todos</button>{categoryNames.map(c => <button key={c} className={activeCategory === c ? "filter active" : "filter"} onClick={() => setActiveCategory(c)}>{c}</button>)}</div>
-      <div className="product-grid">{visibleProducts.map((product, index) => <article className="product-card" key={product.id}><div className={`product-image image-${index % 6}`}><img src={product.image_url} alt={product.name} loading="lazy"/>{product.featured && <span className="product-badge">Destacado</span>}<button className="favorite" aria-label={`Agregar ${product.name} al carrito`} onClick={() => setCart(current => [...current, product])}><Heart size={17}/></button></div><div className="product-info"><span className="product-category">{product.category}</span><h3>{product.name}</h3><p>{product.description}</p><div className="product-bottom"><strong>{formatPrice(product.price)}</strong><button className="add-button" onClick={() => setCart(current => [...current, product])}>Sumar <span>+</span></button></div><a className="product-whatsapp" href={whatsappLink([product])} target="_blank" rel="noreferrer"><MessageCircle size={16}/> Consultar por WhatsApp</a></div></article>)}{visibleProducts.length === 0 && <div className="empty-state">No encontramos productos con esa búsqueda. Probá con otra palabra o categoría.</div>}</div>
+      <div className="product-grid">{visibleProducts.map((product, index) => <article className="product-card" key={product.id}><div className={`product-image image-${index % 6}`}><img
+  src={product.image_url}
+  alt={product.name}
+  loading="lazy"
+  role="button"
+  tabIndex={0}
+  aria-label={`Ampliar imagen de ${product.name}`}
+  style={{ cursor: "zoom-in" }}
+  onClick={() => setSelectedProduct(product)}
+  onKeyDown={(event) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      setSelectedProduct(product);
+    }
+  }}
+/>{product.featured && <span className="product-badge">Destacado</span>}<button className="favorite" aria-label={`Agregar ${product.name} al carrito`} onClick={() => setCart(current => [...current, product])}><Heart size={17}/></button></div><div className="product-info"><span className="product-category">{product.category}</span><h3>{product.name}</h3><p>{product.description}</p><div className="product-bottom"><strong>{formatPrice(product.price)}</strong><button className="add-button" onClick={() => setCart(current => [...current, product])}>Sumar <span>+</span></button></div><a className="product-whatsapp" href={whatsappLink([product])} target="_blank" rel="noreferrer"><MessageCircle size={16}/> Consultar por WhatsApp</a></div></article>)}{visibleProducts.length === 0 && <div className="empty-state">No encontramos productos con esa búsqueda. Probá con otra palabra o categoría.</div>}</div>
     </section>
 
     {portfolio.length > 0 && <section className="section portfolio-section" id="trabajos"><div className="section-heading"><div><span className="section-kicker">HECHO CON CREATIVIDAD</span><h2>Nuestros trabajos <span>✦</span></h2><p>Algunas ideas que hicimos realidad.</p></div></div><div className="portfolio-search-wrap"><Search size={18}/><input aria-label="Buscar trabajos" placeholder="Buscar por nombre, descripción o categoría..." value={portfolioSearch} onChange={e => setPortfolioSearch(e.target.value)} /></div><div className="filters portfolio-filters"><button className={activePortfolioCategory === "Todos" ? "filter active" : "filter"} onClick={() => setActivePortfolioCategory("Todos")}>Todos</button>{categoryNames.map(c => <button key={c} className={activePortfolioCategory === c ? "filter active" : "filter"} onClick={() => setActivePortfolioCategory(c)}>{c}</button>)}</div><div className="portfolio-grid">{visiblePortfolio.map(item => <article className={`portfolio-card ${item.is_featured ? "portfolio-card-featured" : ""}`} key={item.id}><div className="portfolio-image-shell"><button type="button" className="portfolio-image-button" onClick={() => setSelectedPortfolioItem(item)} aria-label={`Ver trabajo ${item.title}`}><img src={item.image_url} alt={item.title} loading="lazy"/><span className="portfolio-zoom-hint"><Search size={16}/> Ver detalle</span></button>{item.is_featured && <span className="portfolio-featured-badge">⭐ Destacado</span>}<button type="button" className={`portfolio-like-button ${likedPortfolioIds.includes(item.id) ? "is-liked" : ""}`} onClick={() => togglePortfolioLike(item.id)} aria-label={likedPortfolioIds.includes(item.id) ? "Quitar me gusta" : "Me gusta este trabajo"} aria-pressed={likedPortfolioIds.includes(item.id)}><Heart size={18} fill={likedPortfolioIds.includes(item.id) ? "currentColor" : "none"}/><span>{likedPortfolioIds.includes(item.id) ? "Te gusta" : "Me gusta"}</span></button></div><div className="portfolio-card-copy"><span className="portfolio-category-pill">{item.category || "Tazas"}</span><h3>{item.title}</h3>{item.description && <p>{item.description}</p>}<button type="button" className="portfolio-detail-link" onClick={() => setSelectedPortfolioItem(item)}>Ver trabajo <ArrowRight size={15}/></button><a className="portfolio-similar-link" href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(`¡Hola! Vi el trabajo "${item.title}" (${item.category || "Tazas"}) en Tu Sublimación Creativa y quisiera consultar por uno parecido.`)}`} target="_blank" rel="noreferrer"><MessageCircle size={15}/> Quiero uno parecido</a></div></article>)}</div>{visiblePortfolio.length === 0 && <div className="empty-state">No encontramos trabajos con esos filtros. Probá otra categoría o palabra.</div>}</section>}
 
     {selectedPortfolioItem && <div className="portfolio-lightbox" role="dialog" aria-modal="true" aria-label={`Detalle de ${selectedPortfolioItem.title}`} onMouseDown={(event) => { if (event.target === event.currentTarget) setSelectedPortfolioItem(null); }}><div className="portfolio-lightbox-panel"><button type="button" className="portfolio-lightbox-close" onClick={() => setSelectedPortfolioItem(null)} aria-label="Cerrar detalle"><X size={23}/></button><div className="portfolio-lightbox-image-wrap"><img src={selectedPortfolioItem.image_url} alt={selectedPortfolioItem.title}/></div><div className="portfolio-lightbox-info"><span className="portfolio-category-pill">{selectedPortfolioItem.category || "Tazas"}</span><h2>{selectedPortfolioItem.title}</h2>{selectedPortfolioItem.description && <p>{selectedPortfolioItem.description}</p>}<button type="button" className={`portfolio-modal-like ${likedPortfolioIds.includes(selectedPortfolioItem.id) ? "is-liked" : ""}`} onClick={() => togglePortfolioLike(selectedPortfolioItem.id)} aria-pressed={likedPortfolioIds.includes(selectedPortfolioItem.id)}><Heart size={18} fill={likedPortfolioIds.includes(selectedPortfolioItem.id) ? "currentColor" : "none"}/>{likedPortfolioIds.includes(selectedPortfolioItem.id) ? "Te gusta este trabajo" : "Me gusta este trabajo"}</button><a className="button button-green" href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(`¡Hola! Vi el trabajo \"${selectedPortfolioItem.title}\" en Tu Sublimación Creativa y quisiera consultar por un diseño parecido.`)}`} target="_blank" rel="noreferrer"><MessageCircle size={18}/> Quiero uno parecido</a></div></div></div>}
+
+{selectedProduct && (
+  <div
+    className="portfolio-lightbox"
+    role="dialog"
+    aria-modal="true"
+    aria-label={`Detalle de ${selectedProduct.name}`}
+    onMouseDown={(event) => {
+      if (event.target === event.currentTarget) {
+        setSelectedProduct(null);
+      }
+    }}
+  >
+    <div className="portfolio-lightbox-panel">
+      <button
+        type="button"
+        className="portfolio-lightbox-close"
+        onClick={() => setSelectedProduct(null)}
+        aria-label="Cerrar detalle"
+      >
+        <X size={23} />
+      </button>
+
+      <div className="portfolio-lightbox-image-wrap">
+        <img
+          src={selectedProduct.image_url}
+          alt={selectedProduct.name}
+        />
+      </div>
+
+      <div className="portfolio-lightbox-info">
+        <span className="portfolio-category-pill">
+          {selectedProduct.category}
+        </span>
+
+        <h2>{selectedProduct.name}</h2>
+
+        <p>{selectedProduct.description}</p>
+
+        <h3>{formatPrice(selectedProduct.price)}</h3>
+
+        <a
+          className="button button-green"
+          href={whatsappLink([selectedProduct])}
+          target="_blank"
+          rel="noreferrer"
+        >
+          <MessageCircle size={18} />
+          Consultar por WhatsApp
+        </a>
+      </div>
+    </div>
+  </div>
+)}
 
     <section className="benefits" id="personalizacion"><div><span className="benefit-icon pink"><Palette/></span><span><b>Diseños a tu gusto</b><small>Tu idea se convierte en un regalo.</small></span></div><div><span className="benefit-icon green"><MessageCircle/></span><span><b>Atención por WhatsApp</b><small>Consultá personalización y disponibilidad.</small></span></div><div><span className="benefit-icon blue"><Truck/></span><span><b>Entrega a coordinar</b><small>Consultanos por envíos y retiros.</small></span></div></section>
 
