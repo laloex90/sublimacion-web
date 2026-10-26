@@ -42,6 +42,7 @@ export default function AdminPage() {
   const [categoryEditEmoji, setCategoryEditEmoji] = useState("✨");
   const [categoryEditImage, setCategoryEditImage] = useState<File | null>(null);
   const [form, setForm] = useState({ ...emptyProduct });
+  const [productImage, setProductImage] = useState<File | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [settings, setSettings] = useState<SiteSettings>({
   hero_title: "Regalos únicos, hechos a tu estilo",
