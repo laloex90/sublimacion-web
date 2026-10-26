@@ -17,7 +17,17 @@ type SiteSettings = {
   instagram_url: string;
 };
 
-type PortfolioItem = { id: string; title: string; description: string; category: string; image_url: string; is_active: boolean; is_featured: boolean; sort_order: number };
+type PortfolioItem = {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  image_url: string;
+  images: string[];
+  is_active: boolean;
+  is_featured: boolean;
+  sort_order: number;
+};
 const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "5493624642189";
 
 const defaultSettings: SiteSettings = {
@@ -63,7 +73,37 @@ if (!settingsResult.error && settingsResult.data) {
   } as SiteSettings);
 }
 
-      if (!portfolioResult.error && portfolioResult.data) setPortfolio(portfolioResult.data as PortfolioItem[]);
+      
+if (!portfolioResult.error && portfolioResult.data) {
+  const portfolioItems = portfolioResult.data as PortfolioItem[];
+
+  if (portfolioItems.length === 0) {
+    setPortfolio([]);
+  } else {
+    const { data: extraImages, error: extraImagesError } = await supabase
+      .from("portfolio_item_images")
+      .select("portfolio_item_id,image_url,sort_order")
+      .in("portfolio_item_id", portfolioItems.map(item => item.id))
+      .order("sort_order", { ascending: true });
+
+    if (extraImagesError) {
+      console.error("Error cargando imágenes adicionales:", extraImagesError);
+    }
+
+    const itemsWithImages = portfolioItems.map(item => ({
+      ...item,
+      images: [
+        item.image_url,
+        ...(extraImages || [])
+          .filter(image => image.portfolio_item_id === item.id)
+          .map(image => image.image_url),
+      ].filter((url, index, urls) => Boolean(url) && urls.indexOf(url) === index),
+    }));
+
+    setPortfolio(itemsWithImages);
+  }
+}
+
     }
     loadContent();
   }, []);
@@ -72,6 +112,7 @@ if (!settingsResult.error && settingsResult.data) {
   const [activePortfolioCategory, setActivePortfolioCategory] = useState("Todos");
   const [portfolioSearch, setPortfolioSearch] = useState("");
   const [selectedPortfolioItem, setSelectedPortfolioItem] = useState<PortfolioItem | null>(null);
+const [selectedPortfolioImageIndex, setSelectedPortfolioImageIndex] = useState(0);
 const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [likedPortfolioIds, setLikedPortfolioIds] = useState<string[]>([]);
 
@@ -185,9 +226,103 @@ return () => {
 />{product.featured && <span className="product-badge">Destacado</span>}<button className="favorite" aria-label={`Agregar ${product.name} al carrito`} onClick={() => setCart(current => [...current, product])}><Heart size={17}/></button></div><div className="product-info"><span className="product-category">{product.category}</span><h3>{product.name}</h3><p>{product.description}</p><div className="product-bottom"><strong>{formatPrice(product.price)}</strong><button className="add-button" onClick={() => setCart(current => [...current, product])}>Sumar <span>+</span></button></div><a className="product-whatsapp" href={whatsappLink([product])} target="_blank" rel="noreferrer"><MessageCircle size={16}/> Consultar por WhatsApp</a></div></article>)}{visibleProducts.length === 0 && <div className="empty-state">No encontramos productos con esa búsqueda. Probá con otra palabra o categoría.</div>}</div>
     </section>
 
-    {portfolio.length > 0 && <section className="section portfolio-section" id="trabajos"><div className="section-heading"><div><span className="section-kicker">HECHO CON CREATIVIDAD</span><h2>Nuestros trabajos <span>✦</span></h2><p>Algunas ideas que hicimos realidad.</p></div></div><div className="portfolio-search-wrap"><Search size={18}/><input aria-label="Buscar trabajos" placeholder="Buscar por nombre, descripción o categoría..." value={portfolioSearch} onChange={e => setPortfolioSearch(e.target.value)} /></div><div className="filters portfolio-filters"><button className={activePortfolioCategory === "Todos" ? "filter active" : "filter"} onClick={() => setActivePortfolioCategory("Todos")}>Todos</button>{categoryNames.map(c => <button key={c} className={activePortfolioCategory === c ? "filter active" : "filter"} onClick={() => setActivePortfolioCategory(c)}>{c}</button>)}</div><div className="portfolio-grid">{visiblePortfolio.map(item => <article className={`portfolio-card ${item.is_featured ? "portfolio-card-featured" : ""}`} key={item.id}><div className="portfolio-image-shell"><button type="button" className="portfolio-image-button" onClick={() => setSelectedPortfolioItem(item)} aria-label={`Ver trabajo ${item.title}`}><img src={item.image_url} alt={item.title} loading="lazy"/><span className="portfolio-zoom-hint"><Search size={16}/> Ver detalle</span></button>{item.is_featured && <span className="portfolio-featured-badge">⭐ Destacado</span>}<button type="button" className={`portfolio-like-button ${likedPortfolioIds.includes(item.id) ? "is-liked" : ""}`} onClick={() => togglePortfolioLike(item.id)} aria-label={likedPortfolioIds.includes(item.id) ? "Quitar me gusta" : "Me gusta este trabajo"} aria-pressed={likedPortfolioIds.includes(item.id)}><Heart size={18} fill={likedPortfolioIds.includes(item.id) ? "currentColor" : "none"}/><span>{likedPortfolioIds.includes(item.id) ? "Te gusta" : "Me gusta"}</span></button></div><div className="portfolio-card-copy"><span className="portfolio-category-pill">{item.category || "Tazas"}</span><h3>{item.title}</h3>{item.description && <p>{item.description}</p>}<button type="button" className="portfolio-detail-link" onClick={() => setSelectedPortfolioItem(item)}>Ver trabajo <ArrowRight size={15}/></button><a className="portfolio-similar-link" href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(`¡Hola! Vi el trabajo "${item.title}" (${item.category || "Tazas"}) en Tu Sublimación Creativa y quisiera consultar por uno parecido.`)}`} target="_blank" rel="noreferrer"><MessageCircle size={15}/> Quiero uno parecido</a></div></article>)}</div>{visiblePortfolio.length === 0 && <div className="empty-state">No encontramos trabajos con esos filtros. Probá otra categoría o palabra.</div>}</section>}
+    {portfolio.length > 0 && <section className="section portfolio-section" id="trabajos"><div className="section-heading"><div><span className="section-kicker">HECHO CON CREATIVIDAD</span><h2>Nuestros trabajos <span>✦</span></h2><p>Algunas ideas que hicimos realidad.</p></div></div><div className="portfolio-search-wrap"><Search size={18}/><input aria-label="Buscar trabajos" placeholder="Buscar por nombre, descripción o categoría..." value={portfolioSearch} onChange={e => setPortfolioSearch(e.target.value)} /></div><div className="filters portfolio-filters"><button className={activePortfolioCategory === "Todos" ? "filter active" : "filter"} onClick={() => setActivePortfolioCategory("Todos")}>Todos</button>{categoryNames.map(c => <button key={c} className={activePortfolioCategory === c ? "filter active" : "filter"} onClick={() => setActivePortfolioCategory(c)}>{c}</button>)}</div><div className="portfolio-grid">{visiblePortfolio.map(item => <article className={`portfolio-card ${item.is_featured ? "portfolio-card-featured" : ""}`} key={item.id}><div className="portfolio-image-shell"><button type="button" className="portfolio-image-button" onClick={() => {
+  setSelectedPortfolioImageIndex(0);
+  setSelectedPortfolioItem(item);
+}} aria-label={`Ver trabajo ${item.title}`}><img src={item.image_url} alt={item.title} loading="lazy"/><span className="portfolio-zoom-hint"><Search size={16}/> Ver detalle</span></button>{item.is_featured && <span className="portfolio-featured-badge">⭐ Destacado</span>}<button type="button" className={`portfolio-like-button ${likedPortfolioIds.includes(item.id) ? "is-liked" : ""}`} onClick={() => togglePortfolioLike(item.id)} aria-label={likedPortfolioIds.includes(item.id) ? "Quitar me gusta" : "Me gusta este trabajo"} aria-pressed={likedPortfolioIds.includes(item.id)}><Heart size={18} fill={likedPortfolioIds.includes(item.id) ? "currentColor" : "none"}/><span>{likedPortfolioIds.includes(item.id) ? "Te gusta" : "Me gusta"}</span></button></div><div className="portfolio-card-copy"><span className="portfolio-category-pill">{item.category || "Tazas"}</span><h3>{item.title}</h3>{item.description && <p>{item.description}</p>}<button type="button" className="portfolio-detail-link" onClick={() => {
+  setSelectedPortfolioImageIndex(0);
+  setSelectedPortfolioItem(item);
+}}>Ver trabajo <ArrowRight size={15}/></button><a className="portfolio-similar-link" href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(`¡Hola! Vi el trabajo "${item.title}" (${item.category || "Tazas"}) en Tu Sublimación Creativa y quisiera consultar por uno parecido.`)}`} target="_blank" rel="noreferrer"><MessageCircle size={15}/> Quiero uno parecido</a></div></article>)}</div>{visiblePortfolio.length === 0 && <div className="empty-state">No encontramos trabajos con esos filtros. Probá otra categoría o palabra.</div>}</section>}
 
-    {selectedPortfolioItem && <div className="portfolio-lightbox" role="dialog" aria-modal="true" aria-label={`Detalle de ${selectedPortfolioItem.title}`} onMouseDown={(event) => { if (event.target === event.currentTarget) setSelectedPortfolioItem(null); }}><div className="portfolio-lightbox-panel"><button type="button" className="portfolio-lightbox-close" onClick={() => setSelectedPortfolioItem(null)} aria-label="Cerrar detalle"><X size={23}/></button><div className="portfolio-lightbox-image-wrap"><img src={selectedPortfolioItem.image_url} alt={selectedPortfolioItem.title}/></div><div className="portfolio-lightbox-info"><span className="portfolio-category-pill">{selectedPortfolioItem.category || "Tazas"}</span><h2>{selectedPortfolioItem.title}</h2>{selectedPortfolioItem.description && <p>{selectedPortfolioItem.description}</p>}<button type="button" className={`portfolio-modal-like ${likedPortfolioIds.includes(selectedPortfolioItem.id) ? "is-liked" : ""}`} onClick={() => togglePortfolioLike(selectedPortfolioItem.id)} aria-pressed={likedPortfolioIds.includes(selectedPortfolioItem.id)}><Heart size={18} fill={likedPortfolioIds.includes(selectedPortfolioItem.id) ? "currentColor" : "none"}/>{likedPortfolioIds.includes(selectedPortfolioItem.id) ? "Te gusta este trabajo" : "Me gusta este trabajo"}</button><a className="button button-green" href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(`¡Hola! Vi el trabajo \"${selectedPortfolioItem.title}\" en Tu Sublimación Creativa y quisiera consultar por un diseño parecido.`)}`} target="_blank" rel="noreferrer"><MessageCircle size={18}/> Quiero uno parecido</a></div></div></div>}
+    {selectedPortfolioItem && <div className="portfolio-lightbox" role="dialog" aria-modal="true" aria-label={`Detalle de ${selectedPortfolioItem.title}`} onMouseDown={(event) => { if (event.target === event.currentTarget) setSelectedPortfolioItem(null); }}><div className="portfolio-lightbox-panel"><button type="button" className="portfolio-lightbox-close" onClick={() => setSelectedPortfolioItem(null)} aria-label="Cerrar detalle"><X size={23}/></button>
+<div className="portfolio-lightbox-image-wrap" style={{ position: "relative" }}>
+  <img
+    src={
+      selectedPortfolioItem.images?.[selectedPortfolioImageIndex] ||
+      selectedPortfolioItem.image_url
+    }
+    alt={`${selectedPortfolioItem.title} — imagen ${selectedPortfolioImageIndex + 1}`}
+  />
+
+  {selectedPortfolioItem.images && selectedPortfolioItem.images.length > 1 && (
+    <>
+      <button
+        type="button"
+        aria-label="Imagen anterior"
+        onClick={() =>
+          setSelectedPortfolioImageIndex(index =>
+            (index - 1 + selectedPortfolioItem.images.length) %
+            selectedPortfolioItem.images.length
+          )
+        }
+        style={{
+          position: "absolute",
+          left: 12,
+          top: "50%",
+          transform: "translateY(-50%)",
+          zIndex: 2,
+          width: 42,
+          height: 42,
+          borderRadius: "50%",
+          border: "none",
+          background: "rgba(255,255,255,0.95)",
+          color: "#192b50",
+          fontSize: 28,
+          cursor: "pointer",
+          boxShadow: "0 2px 12px rgba(0,0,0,0.18)",
+        }}
+      >
+        ‹
+      </button>
+
+      <button
+        type="button"
+        aria-label="Imagen siguiente"
+        onClick={() =>
+          setSelectedPortfolioImageIndex(index =>
+            (index + 1) % selectedPortfolioItem.images.length
+          )
+        }
+        style={{
+          position: "absolute",
+          right: 12,
+          top: "50%",
+          transform: "translateY(-50%)",
+          zIndex: 2,
+          width: 42,
+          height: 42,
+          borderRadius: "50%",
+          border: "none",
+          background: "rgba(255,255,255,0.95)",
+          color: "#192b50",
+          fontSize: 28,
+          cursor: "pointer",
+          boxShadow: "0 2px 12px rgba(0,0,0,0.18)",
+        }}
+      >
+        ›
+      </button>
+
+      <span
+        style={{
+          position: "absolute",
+          bottom: 12,
+          left: "50%",
+          transform: "translateX(-50%)",
+          background: "rgba(18,38,78,0.85)",
+          color: "#fff",
+          padding: "6px 12px",
+          borderRadius: 20,
+          fontSize: 13,
+          fontWeight: 700,
+        }}
+      >
+        {selectedPortfolioImageIndex + 1} / {selectedPortfolioItem.images.length}
+      </span>
+    </>
+  )}
+</div>
+<div className="portfolio-lightbox-info"><span className="portfolio-category-pill">{selectedPortfolioItem.category || "Tazas"}</span><h2>{selectedPortfolioItem.title}</h2>{selectedPortfolioItem.description && <p>{selectedPortfolioItem.description}</p>}<button type="button" className={`portfolio-modal-like ${likedPortfolioIds.includes(selectedPortfolioItem.id) ? "is-liked" : ""}`} onClick={() => togglePortfolioLike(selectedPortfolioItem.id)} aria-pressed={likedPortfolioIds.includes(selectedPortfolioItem.id)}><Heart size={18} fill={likedPortfolioIds.includes(selectedPortfolioItem.id) ? "currentColor" : "none"}/>{likedPortfolioIds.includes(selectedPortfolioItem.id) ? "Te gusta este trabajo" : "Me gusta este trabajo"}</button><a className="button button-green" href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(`¡Hola! Vi el trabajo \"${selectedPortfolioItem.title}\" en Tu Sublimación Creativa y quisiera consultar por un diseño parecido.`)}`} target="_blank" rel="noreferrer"><MessageCircle size={18}/> Quiero uno parecido</a></div></div></div>}
 
 {selectedProduct && (
   <div
