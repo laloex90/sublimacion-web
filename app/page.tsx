@@ -52,6 +52,7 @@ export default function Home() {
     }))
   );
   const [settings, setSettings] = useState<SiteSettings>(defaultSettings);
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
   const [portfolio, setPortfolio] = useState<PortfolioItem[]>([]);
   const [activeCategory, setActiveCategory] = useState("Todos");
   const [search, setSearch] = useState("");
@@ -110,13 +111,15 @@ export default function Home() {
       }
 
       if (!settingsResult.error && settingsResult.data) {
-        setSettings({
-          ...defaultSettings,
-          ...settingsResult.data,
-          facebook_url: settingsResult.data.facebook_url || "",
-          instagram_url: settingsResult.data.instagram_url || ""
-        } as SiteSettings);
-      }
+  setSettings({
+    ...defaultSettings,
+    ...settingsResult.data,
+    facebook_url: settingsResult.data.facebook_url || "",
+    instagram_url: settingsResult.data.instagram_url || ""
+  } as SiteSettings);
+}
+
+setSettingsLoaded(true);
 
       if (!portfolioResult.error && portfolioResult.data) {
         const portfolioItems = portfolioResult.data as PortfolioItem[];
@@ -426,12 +429,30 @@ export default function Home() {
           </div>
         </div>
 
-        {settings.hero_image_url ? (
-          <div
-            className="hero-custom-image"
-            role="img"
-            aria-label="Imagen de portada"
-            style={{ backgroundImage: `url("${settings.hero_image_url}")` }}
+        {!settingsLoaded ? (
+  <div className="hero-custom-image" aria-hidden="true" />
+) : settings.hero_image_url ? (
+  <div
+    className="hero-custom-image"
+    role="img"
+    aria-label="Imagen de portada"
+    style={{
+      backgroundImage: `url("${settings.hero_image_url}")`
+    }}
+  />
+) : (
+  <div className="hero-art" aria-label="Productos de sublimación de muestra">
+    <div className="paint paint-one" />
+    <div className="paint paint-two" />
+    <div className="hero-note">Tu idea,<br />nuestro trabajo <Heart size={20} /></div>
+    <div className="sample-product mug"><span>Tu diseño<br />favorito ♡</span></div>
+    <div className="sample-product shirt"><span>CREÁ<br />ALGO ÚNICO</span></div>
+    <div className="sample-product bottle"><span>GOOD<br />VIBES</span></div>
+    <div className="sample-product cap"><span>Creativa</span></div>
+    <div className="hero-spark spark-a">✦</div>
+    <div className="hero-spark spark-b">✿</div>
+  </div>
+)}
           />
         ) : (
           <div className="hero-art" aria-label="Productos de sublimación de muestra">
