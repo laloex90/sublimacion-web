@@ -44,7 +44,6 @@ export default function AdminPage() {
   const [form, setForm] = useState({ ...emptyProduct });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [portfolioImage, setPortfolioImage] = useState<File | null>(null);
-const [portfolioImages, setPortfolioImages] = useState<File[]>([]);
   const [settings, setSettings] = useState<SiteSettings>({
   hero_title: "Regalos únicos, hechos a tu estilo",
   hero_subtitle: "Personalizá tus momentos con productos de sublimación llenos de color, creatividad y cariño.",
