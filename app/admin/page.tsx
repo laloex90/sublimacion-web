@@ -43,7 +43,8 @@ export default function AdminPage() {
   const [categoryEditImage, setCategoryEditImage] = useState<File | null>(null);
   const [form, setForm] = useState({ ...emptyProduct });
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [productImage, setProductImage] = useState<File | null>(null);
+  const [portfolioImage, setPortfolioImage] = useState<File | null>(null);
+const [portfolioImages, setPortfolioImages] = useState<File[]>([]);
   const [settings, setSettings] = useState<SiteSettings>({
   hero_title: "Regalos únicos, hechos a tu estilo",
   hero_subtitle: "Personalizá tus momentos con productos de sublimación llenos de color, creatividad y cariño.",
@@ -179,19 +180,117 @@ const [heroImage, setHeroImage] = useState<File | null>(null);
     } catch (e) { setError(e instanceof Error ? e.message : "No se pudo guardar la portada."); }
     setBusy(false);
   }
-  async function savePortfolio(e: FormEvent) {
-    e.preventDefault(); setBusy(true); setError("");
-    try {
-      let imageUrl = portfolioForm.image_url;
-      if (portfolioImage) imageUrl = await uploadImage(portfolioImage, "portfolio");
-      if (!portfolioForm.title.trim() || !imageUrl) throw new Error("El trabajo necesita título e imagen.");
-      const payload = { title: portfolioForm.title.trim(), description: portfolioForm.description.trim(), category: portfolioForm.category, image_url: imageUrl, is_active: portfolioForm.is_active, is_featured: portfolioForm.is_featured, sort_order: 0 };
-      const result = editingPortfolioId ? await db.from("portfolio_items").update(payload).eq("id", editingPortfolioId) : await db.from("portfolio_items").insert(payload);
+  
+async function savePortfolio(e: FormEvent) {
+  e.preventDefault();
+  setBusy(true);
+  setError("");
+  setMessage("");
+
+  try {
+    const selectedImages = portfolioImages;
+    let imageUrl = portfolioForm.image_url;
+
+    if (!portfolioForm.title.trim()) {
+      throw new Error("Ingresá un título para el trabajo.");
+    }
+
+    if (!imageUrl && selectedImages.length === 0) {
+      throw new Error("Seleccioná al menos una imagen.");
+    }
+
+    // Subir las imágenes seleccionadas a Supabase.
+    const uploadedUrls: string[] = [];
+
+    for (const file of selectedImages) {
+      const url = await uploadImage(file, "portfolio");
+      uploadedUrls.push(url);
+    }
+
+    // La primera imagen será la portada si el trabajo es nuevo.
+    if (!imageUrl && uploadedUrls.length > 0) {
+      imageUrl = uploadedUrls.shift()!;
+    } else if (uploadedUrls.length > 0 && !editingPortfolioId) {
+      imageUrl = uploadedUrls.shift()!;
+    }
+
+    const payload = {
+      title: portfolioForm.title.trim(),
+      description: portfolioForm.description.trim(),
+      category: portfolioForm.category,
+      image_url: imageUrl,
+      is_active: portfolioForm.is_active,
+      is_featured: portfolioForm.is_featured,
+      sort_order: 0,
+    };
+
+    let portfolioId = editingPortfolioId;
+
+    if (portfolioId) {
+      const result = await db
+        .from("portfolio_items")
+        .update(payload)
+        .eq("id", portfolioId);
+
       if (result.error) throw result.error;
-      setPortfolioForm({ ...emptyPortfolio }); setPortfolioImage(null); setEditingPortfolioId(null); await loadPortfolio(); setMessage("Trabajo guardado.");
-    } catch (e) { setError(e instanceof Error ? e.message : "No se pudo guardar el trabajo."); }
+    } else {
+      const result = await db
+        .from("portfolio_items")
+        .insert(payload)
+        .select("id")
+        .single();
+
+      if (result.error) throw result.error;
+      portfolioId = result.data.id;
+    }
+
+    // Guardar las fotos adicionales relacionadas con este trabajo.
+    if (uploadedUrls.length > 0 && portfolioId) {
+      const { data: existingImages, error: imagesError } = await db
+        .from("portfolio_item_images")
+        .select("sort_order")
+        .eq("portfolio_item_id", portfolioId)
+        .order("sort_order", { ascending: false })
+        .limit(1);
+
+      if (imagesError) throw imagesError;
+
+      const nextOrder =
+        existingImages && existingImages.length > 0
+          ? existingImages[0].sort_order + 1
+          : 1;
+
+      const imageRows = uploadedUrls.map((url, index) => ({
+        portfolio_item_id: portfolioId,
+        image_url: url,
+        sort_order: nextOrder + index,
+      }));
+
+      const { error: insertImagesError } = await db
+        .from("portfolio_item_images")
+        .insert(imageRows);
+
+      if (insertImagesError) throw insertImagesError;
+    }
+
+    setPortfolioForm({ ...emptyPortfolio });
+    setPortfolioImage(null);
+    setPortfolioImages([]);
+    setEditingPortfolioId(null);
+
+    await loadPortfolio();
+    setMessage("Trabajo e imágenes guardados correctamente.");
+  } catch (e) {
+    setError(
+      e instanceof Error
+        ? e.message
+        : "No se pudo guardar el trabajo."
+    );
+  } finally {
     setBusy(false);
   }
+}
+
   function editPortfolio(item: PortfolioItem) { setEditingPortfolioId(item.id); setPortfolioForm({ title: item.title, description: item.description || "", category: item.category || categories[0]?.name || "Tazas", image_url: item.image_url, is_active: item.is_active, is_featured: item.is_featured ?? false }); setPortfolioImage(null); }
   async function togglePortfolio(item: PortfolioItem) { const { error: e } = await db.from("portfolio_items").update({ is_active: !item.is_active }).eq("id", item.id); if (e) setError(e.message); else await loadPortfolio(); }
   async function deletePortfolio(item: PortfolioItem) { if (!window.confirm(`¿Eliminar “${item.title}” de Nuestros trabajos?`)) return; const { error: e } = await db.from("portfolio_items").delete().eq("id", item.id); if (e) setError(e.message); else { await loadPortfolio(); setMessage("Trabajo eliminado."); } }
@@ -241,6 +340,34 @@ const [heroImage, setHeroImage] = useState<File | null>(null);
 
   <section style={panel}><h2 style={{ marginTop: 0 }}>🛍️ Productos ({products.length})</h2>{products.length === 0 ? <p>Todavía no hay productos cargados.</p> : <div style={{ display: "grid", gap: 10 }}>{products.map(p => <article key={p.id} style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12, border: "1px solid #e5eaf4", borderRadius: 12, padding: 12 }}><img src={p.image_url} alt={p.name} style={{ width: 76, height: 76, objectFit: "cover", borderRadius: 9, background: "#f3f5fa" }} /><div style={{ flex: "1 1 180px" }}><b>{p.name}</b><div style={{ color: "#6d7891", fontSize: 12, marginTop: 4 }}>{p.category} · {formatPrice(p.price)}</div><div style={{ fontSize: 12, marginTop: 4 }}>{p.is_active ? "Publicado" : "Oculto"}{p.featured ? " · Destacado" : ""}</div></div><button style={secondaryButton} onClick={() => editProduct(p)}>Editar</button><button style={secondaryButton} onClick={() => toggleProduct(p)}>{p.is_active ? "Ocultar" : "Publicar"}</button><button style={{ ...buttonStyle, background: "#fff0f4", color: "#b42355" }} onClick={() => deleteProduct(p)}>Eliminar</button></article>)}</div>}</section>
 
-  <section style={panel}><h2 style={{ marginTop: 0 }}>{editingPortfolioId ? "✏️ Editar trabajo" : "📸 Agregar a Nuestros trabajos"}</h2><p style={{ color: "#6d7891", fontSize: 13 }}>Publicá ejemplos de tus trabajos personalizados en la página principal.</p><form onSubmit={savePortfolio}><label style={label}>Título<input style={inputStyle} value={portfolioForm.title} onChange={e => setPortfolioForm({ ...portfolioForm, title: e.target.value })} required /></label><label style={label}>Categoría<select style={inputStyle} value={portfolioForm.category} onChange={e => setPortfolioForm({ ...portfolioForm, category: e.target.value })} required>{categories.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}</select></label><label style={label}>Descripción<textarea style={{ ...inputStyle, minHeight: 70 }} value={portfolioForm.description} onChange={e => setPortfolioForm({ ...portfolioForm, description: e.target.value })} /></label><label style={label}>Imagen<input style={inputStyle} type="file" accept="image/*" onChange={e => setPortfolioImage(e.target.files?.[0] || null)} />{portfolioForm.image_url && <span style={{ display: "block", marginBottom: 10, fontSize: 12 }}>Hay una imagen guardada. Elegí otra para reemplazarla.</span>}</label><label style={{ display: "flex", gap: 8, marginBottom: 12, alignItems: "center" }}><input type="checkbox" checked={portfolioForm.is_featured} onChange={e => setPortfolioForm({ ...portfolioForm, is_featured: e.target.checked })} /> ⭐ Trabajo destacado (aparece primero)</label><label style={{ display: "flex", gap: 8, marginBottom: 15, alignItems: "center" }}><input type="checkbox" checked={portfolioForm.is_active} onChange={e => setPortfolioForm({ ...portfolioForm, is_active: e.target.checked })} /> Publicar en la página</label><button style={buttonStyle} disabled={busy}>{busy ? "Guardando…" : editingPortfolioId ? "Guardar cambios" : "Agregar trabajo"}</button>{editingPortfolioId && <button type="button" style={{ ...secondaryButton, marginLeft: 8 }} onClick={() => { setEditingPortfolioId(null); setPortfolioForm({ ...emptyPortfolio }); setPortfolioImage(null); }}>Cancelar edición</button>}</form><h3>Trabajos cargados ({portfolio.length})</h3>{portfolio.length === 0 ? <p>Todavía no hay trabajos cargados.</p> : <div style={{ display: "grid", gap: 10 }}>{portfolio.map(item => <article key={item.id} style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12, border: "1px solid #e5eaf4", borderRadius: 12, padding: 12 }}><img src={item.image_url} alt={item.title} style={{ width: 76, height: 76, objectFit: "cover", borderRadius: 9 }} /><div style={{ flex: "1 1 180px" }}><b>{item.title}</b><div style={{ color: "#6d7891", fontSize: 12 }}>{item.category || "Tazas"} · {item.is_active ? "Publicado" : "Oculto"}{item.is_featured ? " · ⭐ Destacado" : ""}</div></div><button style={secondaryButton} onClick={() => editPortfolio(item)}>Editar</button><button style={secondaryButton} onClick={() => togglePortfolio(item)}>{item.is_active ? "Ocultar" : "Publicar"}</button><button style={{ ...buttonStyle, background: "#fff0f4", color: "#b42355" }} onClick={() => deletePortfolio(item)}>Eliminar</button></article>)}</div>}</section>
+<section style={panel}><h2 style={{ marginTop: 0 }}>{editingPortfolioId ? "✏️ Editar trabajo" : "📸 Agregar a Nuestros trabajos"}</h2><p style={{ color: "#6d7891", fontSize: 13 }}>Publicá ejemplos de tus trabajos personalizados en la página principal.</p><form onSubmit={savePortfolio}><label style={label}>Título<input style={inputStyle} value={portfolioForm.title} onChange={e => setPortfolioForm({ ...portfolioForm, title: e.target.value })} required /></label><label style={label}>Categoría<select style={inputStyle} value={portfolioForm.category} onChange={e => setPortfolioForm({ ...portfolioForm, category: e.target.value })} required>{categories.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}</select></label><label style={label}>Descripción<textarea style={{ ...inputStyle, minHeight: 70 }} value={portfolioForm.description} onChange={e => setPortfolioForm({ ...portfolioForm, description: e.target.value })} /></label>
+<label style={label}>
+  Imágenes del trabajo
+  <input
+    style={inputStyle}
+    type="file"
+    accept="image/*"
+    multiple
+    onChange={e =>
+      setPortfolioImages(Array.from(e.target.files || []))
+    }
+  />
+  <span style={{ display: "block", marginBottom: 10, fontSize: 12 }}>
+    Podés seleccionar varias fotos del mismo trabajo.
+  </span>
+  {portfolioImages.length > 0 && (
+    <span style={{ display: "block", marginBottom: 10, fontSize: 12 }}>
+      {portfolioImages.length} imagen(es) seleccionada(s).
+    </span>
+  )}
+  {portfolioForm.image_url && (
+    <span style={{ display: "block", marginBottom: 10, fontSize: 12 }}>
+      Este trabajo ya tiene una imagen guardada.
+    </span>
+  )}
+</label>
+<label style={{ display: "flex", gap: 8, marginBottom: 12, alignItems: "center" }}><input type="checkbox" checked={portfolioForm.is_featured} onChange={e => setPortfolioForm({ ...portfolioForm, is_featured: e.target.checked })} /> ⭐ Trabajo destacado (aparece primero)</label><label style={{ display: "flex", gap: 8, marginBottom: 15, alignItems: "center" }}><input type="checkbox" checked={portfolioForm.is_active} onChange={e => setPortfolioForm({ ...portfolioForm, is_active: e.target.checked })} /> Publicar en la página</label><button style={buttonStyle} disabled={busy}>{busy ? "Guardando…" : editingPortfolioId ? "Guardar cambios" : "Agregar trabajo"}</button>{editingPortfolioId && <button type="button" style={{ ...secondaryButton, marginLeft: 8 }} onClick={() => { setEditingPortfolioId(null); setPortfolioForm({ ...emptyPortfolio }); setPortfolioImage(null); }}>Cancelar edición</button>}</form><h3>Trabajos cargados ({portfolio.length})</h3>{portfolio.length === 0 ? <p>Todavía no hay trabajos cargados.</p> : <div style={{ display: "grid", gap: 10 }}>{portfolio.map(item => <article key={item.id} style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12, border: "1px solid #e5eaf4", borderRadius: 12, padding: 12 }}><img src={item.image_url} alt={item.title} style={{ width: 76, height: 76, objectFit: "cover", borderRadius: 9 }} /><div style={{ flex: "1 1 180px" }}><b>{item.title}</b><div style={{ color: "#6d7891", fontSize: 12 }}>{item.category || "Tazas"} · {item.is_active ? "Publicado" : "Oculto"}{item.is_featured ? " · ⭐ Destacado" : ""}</div></div><button style={secondaryButton} onClick={() => editPortfolio(item)}>Editar</button><button style={secondaryButton} onClick={() => togglePortfolio(item)}>{item.is_active ? "Ocultar" : "Publicar"}</button><button style={{ ...buttonStyle, background: "#fff0f4", color: "#b42355" }} onClick={() => deletePortfolio(item)}>Eliminar</button></article>)}</div>}</section>
   </div></main>;
 }
+
+  
