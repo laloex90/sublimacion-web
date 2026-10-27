@@ -394,80 +394,92 @@ setSettingsLoaded(true);
         <a href="#contacto">Contacto</a>
       </nav>
 
-      <section className="hero" id="inicio">
-        <div className="hero-copy">
-          <div className="eyebrow"><span className="eyebrow-dot" /> HECHO A TU MANERA</div>
+      
+<section className="hero" id="inicio">
+  <div className="hero-copy">
+    <div className="eyebrow">
+      <span className="eyebrow-dot" /> HECHO A TU MANERA
+    </div>
 
-          <h1>
-            {settings.hero_title.split(",")[0]}
-            {settings.hero_title.includes(",") ? (
-              <>
-                <br />
-                <em>{settings.hero_title.substring(settings.hero_title.indexOf(",") + 1).trim()}</em>
-              </>
-            ) : (
-              <span className="hero-title-second"><em /></span>
-            )}
-            <span className="heart">♡</span>
-          </h1>
+    <h1>
+      {settings.hero_title.split(",")[0]}
+      {settings.hero_title.includes(",") ? (
+        <>
+          <br />
+          <em>
+            {settings.hero_title.substring(
+              settings.hero_title.indexOf(",") + 1
+            ).trim()}
+          </em>
+        </>
+      ) : (
+        <span className="hero-title-second"><em /></span>
+      )}
+      <span className="heart">♡</span>
+    </h1>
 
-          <p>{settings.hero_subtitle}</p>
+    <p>{settings.hero_subtitle}</p>
 
-          <div className="hero-actions">
-            <a className="button button-pink" href={settings.hero_button_url || "#catalogo"}>
-              {settings.hero_button_text || "Ver catálogo"} <ArrowRight size={17} />
-            </a>
-            <a className="button button-green" href={`https://wa.me/${whatsappNumber}`} target="_blank" rel="noreferrer">
-              <MessageCircle size={18} /> Hacé tu pedido
-            </a>
-          </div>
+    <div className="hero-actions">
+      <a
+        className="button button-pink"
+        href={settings.hero_button_url || "#catalogo"}
+      >
+        {settings.hero_button_text || "Ver catálogo"}{" "}
+        <ArrowRight size={17} />
+      </a>
 
-          <div className="hero-points">
-            <span><Check /> Diseños personalizados</span>
-            <span><Heart /> Hecho con cariño</span>
-            <span><Truck /> Envíos a coordinar</span>
-          </div>
-        </div>
+      <a
+        className="button button-green"
+        href={`https://wa.me/${whatsappNumber}`}
+        target="_blank"
+        rel="noreferrer"
+      >
+        <MessageCircle size={18} /> Hacé tu pedido
+      </a>
+    </div>
 
-        {!settingsLoaded ? (
-  <div className="hero-custom-image" aria-hidden="true" />
-) : settings.hero_image_url ? (
-  <div
-    className="hero-custom-image"
-    role="img"
-    aria-label="Imagen de portada"
-    style={{
-      backgroundImage: `url("${settings.hero_image_url}")`
-    }}
-  />
-) : (
-  <div className="hero-art" aria-label="Productos de sublimación de muestra">
-    <div className="paint paint-one" />
-    <div className="paint paint-two" />
-    <div className="hero-note">Tu idea,<br />nuestro trabajo <Heart size={20} /></div>
-    <div className="sample-product mug"><span>Tu diseño<br />favorito ♡</span></div>
-    <div className="sample-product shirt"><span>CREÁ<br />ALGO ÚNICO</span></div>
-    <div className="sample-product bottle"><span>GOOD<br />VIBES</span></div>
-    <div className="sample-product cap"><span>Creativa</span></div>
-    <div className="hero-spark spark-a">✦</div>
-    <div className="hero-spark spark-b">✿</div>
+    <div className="hero-points">
+      <span><Check /> Diseños personalizados</span>
+      <span><Heart /> Hecho con cariño</span>
+      <span><Truck /> Envíos a coordinar</span>
+    </div>
   </div>
-)}
-          />
-        ) : (
-          <div className="hero-art" aria-label="Productos de sublimación de muestra">
-            <div className="paint paint-one" />
-            <div className="paint paint-two" />
-            <div className="hero-note">Tu idea,<br />nuestro trabajo <Heart size={20} /></div>
-            <div className="sample-product mug"><span>Tu diseño<br />favorito ♡</span></div>
-            <div className="sample-product shirt"><span>CREÁ<br />ALGO ÚNICO</span></div>
-            <div className="sample-product bottle"><span>GOOD<br />VIBES</span></div>
-            <div className="sample-product cap"><span>Creativa</span></div>
-            <div className="hero-spark spark-a">✦</div>
-            <div className="hero-spark spark-b">✿</div>
-          </div>
-        )}
-      </section>
+
+  {!settingsLoaded ? (
+    <div className="hero-custom-image" aria-hidden="true" />
+  ) : settings.hero_image_url ? (
+    <div
+      className="hero-custom-image"
+      role="img"
+      aria-label="Imagen de portada"
+      style={{
+        backgroundImage: `url("${settings.hero_image_url}")`
+      }}
+    />
+  ) : (
+    <div className="hero-art" aria-label="Productos de sublimación de muestra">
+      <div className="paint paint-one" />
+      <div className="paint paint-two" />
+      <div className="hero-note">
+        Tu idea,<br />nuestro trabajo <Heart size={20} />
+      </div>
+      <div className="sample-product mug">
+        <span>Tu diseño<br />favorito ♡</span>
+      </div>
+      <div className="sample-product shirt">
+        <span>CREÁ<br />ALGO ÚNICO</span>
+      </div>
+      <div className="sample-product bottle">
+        <span>GOOD<br />VIBES</span>
+      </div>
+      <div className="sample-product cap"><span>Creativa</span></div>
+      <div className="hero-spark spark-a">✦</div>
+      <div className="hero-spark spark-b">✿</div>
+    </div>
+  )}
+</section>
+
 
       <section className="section" id="categorias">
         <div className="section-heading">
