@@ -11,6 +11,12 @@ const db = supabase!;
 type Category = { name: string; icon_emoji: string | null; icon_image_url: string | null };
 type SiteSettings = { hero_title: string; hero_subtitle: string; hero_image_url: string | null; hero_button_text: string; hero_button_url: string; facebook_url: string; instagram_url: string };
 type PortfolioItem = { id: string; title: string; description: string; category: string; image_url: string; is_active: boolean; is_featured: boolean; sort_order: number };
+type PortfolioPhoto = {
+  id: string;
+  portfolio_item_id: string;
+  image_url: string;
+  sort_order: number;
+};
 
 const defaultCategories: Category[] = [
   { name: "Tazas", icon_emoji: "☕", icon_image_url: null },
@@ -59,6 +65,12 @@ const [heroImage, setHeroImage] = useState<File | null>(null);
   const [portfolioImage, setPortfolioImage] = useState<File | null>(null);
   const [portfolioImages, setPortfolioImages] = useState<File[]>([]);
   const [editingPortfolioId, setEditingPortfolioId] = useState<string | null>(null);
+  const [existingPortfolioPhotos, setExistingPortfolioPhotos] =
+  useState<PortfolioPhoto[]>([]);
+const [replacingPhotoId, setReplacingPhotoId] =
+  useState<string | null>(null);
+const [replacementPhoto, setReplacementPhoto] =
+  useState<File | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -291,7 +303,141 @@ async function savePortfolio(e: FormEvent) {
   }
 }
 
-  function editPortfolio(item: PortfolioItem) { setEditingPortfolioId(item.id); setPortfolioForm({ title: item.title, description: item.description || "", category: item.category || categories[0]?.name || "Tazas", image_url: item.image_url, is_active: item.is_active, is_featured: item.is_featured ?? false }); setPortfolioImage(null); }
+  async function editPortfolio(item: PortfolioItem) {
+  setError("");
+  setMessage("");
+  setEditingPortfolioId(item.id);
+  setPortfolioForm({
+    title: item.title,
+    description: item.description || "",
+    category: item.category || categories[0]?.name || "Tazas",
+    image_url: item.image_url,
+    is_active: item.is_active,
+    is_featured: item.is_featured ?? false,
+  });
+  setPortfolioImages([]);
+  setPortfolioImage(null);
+  setReplacementPhoto(null);
+  setReplacingPhotoId(null);
+  setExistingPortfolioPhotos([]);
+
+  setBusy(true);
+
+  try {
+    const { data, error: photosError } = await db
+      .from("portfolio_item_images")
+      .select("id,portfolio_item_id,image_url,sort_order")
+      .eq("portfolio_item_id", item.id)
+      .order("sort_order", { ascending: true });
+
+    if (photosError) throw photosError;
+
+    setExistingPortfolioPhotos((data || []) as PortfolioPhoto[]);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  } catch (e) {
+    setError(
+      e instanceof Error
+        ? e.message
+        : "No se pudieron cargar las fotos del trabajo."
+    );
+  } finally {
+    setBusy(false);
+  }
+}
+  async function replacePortfolioPhoto(
+  photo: PortfolioPhoto | null,
+  file: File
+) {
+  if (!editingPortfolioId) return;
+
+  setBusy(true);
+  setError("");
+  setMessage("");
+
+  try {
+    const newUrl = await uploadImage(file, "portfolio");
+
+    if (photo === null) {
+      // Reemplazar la portada principal.
+      const { error: updateError } = await db
+        .from("portfolio_items")
+        .update({ image_url: newUrl })
+        .eq("id", editingPortfolioId);
+
+      if (updateError) throw updateError;
+
+      setPortfolioForm(current => ({
+        ...current,
+        image_url: newUrl,
+      }));
+    } else {
+      // Reemplazar una foto adicional sin tocar las demás.
+      const { error: updateError } = await db
+        .from("portfolio_item_images")
+        .update({ image_url: newUrl })
+        .eq("id", photo.id)
+        .eq("portfolio_item_id", editingPortfolioId);
+
+      if (updateError) throw updateError;
+
+      setExistingPortfolioPhotos(current =>
+        current.map(p =>
+          p.id === photo.id ? { ...p, image_url: newUrl } : p
+        )
+      );
+    }
+
+    setReplacementPhoto(null);
+    setReplacingPhotoId(null);
+    await loadPortfolio();
+    setMessage("Foto reemplazada correctamente.");
+  } catch (e) {
+    setError(
+      e instanceof Error ? e.message : "No se pudo reemplazar la foto."
+    );
+  } finally {
+    setBusy(false);
+  }
+}
+
+async function deletePortfolioPhoto(photo: PortfolioPhoto) {
+  if (!editingPortfolioId) return;
+
+  if (
+    !window.confirm(
+      "¿Eliminar esta foto del trabajo? Esta acción no se puede deshacer."
+    )
+  ) {
+    return;
+  }
+
+  setBusy(true);
+  setError("");
+  setMessage("");
+
+  try {
+    const { error: deleteError } = await db
+      .from("portfolio_item_images")
+      .delete()
+      .eq("id", photo.id)
+      .eq("portfolio_item_id", editingPortfolioId);
+
+    if (deleteError) throw deleteError;
+
+    setExistingPortfolioPhotos(current =>
+      current.filter(p => p.id !== photo.id)
+    );
+
+    await loadPortfolio();
+    setMessage("Foto eliminada correctamente.");
+  } catch (e) {
+    setError(
+      e instanceof Error ? e.message : "No se pudo eliminar la foto."
+    );
+  } finally {
+    setBusy(false);
+  }
+}
   async function togglePortfolio(item: PortfolioItem) { const { error: e } = await db.from("portfolio_items").update({ is_active: !item.is_active }).eq("id", item.id); if (e) setError(e.message); else await loadPortfolio(); }
   async function deletePortfolio(item: PortfolioItem) { if (!window.confirm(`¿Eliminar “${item.title}” de Nuestros trabajos?`)) return; const { error: e } = await db.from("portfolio_items").delete().eq("id", item.id); if (e) setError(e.message); else { await loadPortfolio(); setMessage("Trabajo eliminado."); } }
 
@@ -366,7 +512,167 @@ async function savePortfolio(e: FormEvent) {
     </span>
   )}
 </label>
-<label style={{ display: "flex", gap: 8, marginBottom: 12, alignItems: "center" }}><input type="checkbox" checked={portfolioForm.is_featured} onChange={e => setPortfolioForm({ ...portfolioForm, is_featured: e.target.checked })} /> ⭐ Trabajo destacado (aparece primero)</label><label style={{ display: "flex", gap: 8, marginBottom: 15, alignItems: "center" }}><input type="checkbox" checked={portfolioForm.is_active} onChange={e => setPortfolioForm({ ...portfolioForm, is_active: e.target.checked })} /> Publicar en la página</label><button style={buttonStyle} disabled={busy}>{busy ? "Guardando…" : editingPortfolioId ? "Guardar cambios" : "Agregar trabajo"}</button>{editingPortfolioId && <button type="button" style={{ ...secondaryButton, marginLeft: 8 }} onClick={() => { setEditingPortfolioId(null); setPortfolioForm({ ...emptyPortfolio }); setPortfolioImage(null); }}>Cancelar edición</button>}</form><h3>Trabajos cargados ({portfolio.length})</h3>{portfolio.length === 0 ? <p>Todavía no hay trabajos cargados.</p> : <div style={{ display: "grid", gap: 10 }}>{portfolio.map(item => <article key={item.id} style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12, border: "1px solid #e5eaf4", borderRadius: 12, padding: 12 }}><img src={item.image_url} alt={item.title} style={{ width: 76, height: 76, objectFit: "cover", borderRadius: 9 }} /><div style={{ flex: "1 1 180px" }}><b>{item.title}</b><div style={{ color: "#6d7891", fontSize: 12 }}>{item.category || "Tazas"} · {item.is_active ? "Publicado" : "Oculto"}{item.is_featured ? " · ⭐ Destacado" : ""}</div></div><button style={secondaryButton} onClick={() => editPortfolio(item)}>Editar</button><button style={secondaryButton} onClick={() => togglePortfolio(item)}>{item.is_active ? "Ocultar" : "Publicar"}</button><button style={{ ...buttonStyle, background: "#fff0f4", color: "#b42355" }} onClick={() => deletePortfolio(item)}>Eliminar</button></article>)}</div>}</section>
+  {editingPortfolioId && (
+  <div
+    style={{
+      margin: "16px 0",
+      padding: 14,
+      border: "1px solid #e5eaf4",
+      borderRadius: 12,
+      background: "#f9fbff",
+    }}
+  >
+    <h3 style={{ marginTop: 0 }}>Fotos guardadas</h3>
+
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+        gap: 12,
+      }}
+    >
+      <div
+        style={{
+          background: "white",
+          border: "1px solid #e5eaf4",
+          borderRadius: 10,
+          padding: 10,
+        }}
+      >
+        <img
+          src={portfolioForm.image_url}
+          alt="Portada del trabajo"
+          style={{
+            width: "100%",
+            height: 160,
+            objectFit: "contain",
+            borderRadius: 8,
+            background: "#f3f5fa",
+          }}
+        />
+
+        <b style={{ display: "block", margin: "8px 0" }}>
+          Portada principal
+        </b>
+
+        <input
+          type="file"
+          accept="image/*"
+          style={{ width: "100%", fontSize: 12 }}
+          onChange={e => {
+            const file = e.target.files?.[0];
+            if (file) void replacePortfolioPhoto(null, file);
+            e.currentTarget.value = "";
+          }}
+          disabled={busy}
+        />
+        <small>Elegí otra imagen para reemplazar la portada.</small>
+      </div>
+
+      {existingPortfolioPhotos.map(photo => (
+        <div
+          key={photo.id}
+          style={{
+            background: "white",
+            border: "1px solid #e5eaf4",
+            borderRadius: 10,
+            padding: 10,
+          }}
+        >
+          <img
+            src={photo.image_url}
+            alt="Foto adicional del trabajo"
+            style={{
+              width: "100%",
+              height: 160,
+              objectFit: "contain",
+              borderRadius: 8,
+              background: "#f3f5fa",
+            }}
+          />
+
+          <b style={{ display: "block", margin: "8px 0" }}>
+            Foto adicional
+          </b>
+
+          {replacingPhotoId === photo.id ? (
+            <>
+              <input
+                type="file"
+                accept="image/*"
+                style={{ width: "100%", fontSize: 12 }}
+                onChange={e =>
+                  setReplacementPhoto(e.target.files?.[0] || null)
+                }
+                disabled={busy}
+              />
+
+              <button
+                type="button"
+                style={{ ...buttonStyle, marginTop: 8 }}
+                disabled={busy || !replacementPhoto}
+                onClick={() => {
+                  if (replacementPhoto) {
+                    void replacePortfolioPhoto(photo, replacementPhoto);
+                  }
+                }}
+              >
+                Confirmar reemplazo
+              </button>
+
+              <button
+                type="button"
+                style={{ ...secondaryButton, marginTop: 8 }}
+                onClick={() => {
+                  setReplacingPhotoId(null);
+                  setReplacementPhoto(null);
+                }}
+              >
+                Cancelar
+              </button>
+            </>
+          ) : (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              <button
+                type="button"
+                style={secondaryButton}
+                disabled={busy}
+                onClick={() => {
+                  setReplacingPhotoId(photo.id);
+                  setReplacementPhoto(null);
+                }}
+              >
+                Reemplazar
+              </button>
+
+              <button
+                type="button"
+                style={{
+                  ...buttonStyle,
+                  background: "#fff0f4",
+                  color: "#b42355",
+                }}
+                disabled={busy}
+                onClick={() => void deletePortfolioPhoto(photo)}
+              >
+                Eliminar foto
+              </button>
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+
+    <p style={{ fontSize: 12, color: "#6d7891" }}>
+      Las fotos nuevas que selecciones arriba se agregarán a este mismo trabajo
+      cuando guardes los cambios.
+    </p>
+  </div>
+)}
+<label style={{ display: "flex", gap: 8, marginBottom: 12, alignItems: "center" }}><input type="checkbox" checked={portfolioForm.is_featured} onChange={e => setPortfolioForm({ ...portfolioForm, is_featured: e.target.checked })} /> ⭐ Trabajo destacado (aparece primero)</label><label style={{ display: "flex", gap: 8, marginBottom: 15, alignItems: "center" }}><input type="checkbox" checked={portfolioForm.is_active} onChange={e => setPortfolioForm({ ...portfolioForm, is_active: e.target.checked })} /> Publicar en la página</label><button style={buttonStyle} disabled={busy}>{busy ? "Guardando…" : editingPortfolioId ? "Guardar cambios" : "Agregar trabajo"}</button>{editingPortfolioId && <button type="button" style={{ ...secondaryButton, marginLeft: 8 }} onClick={() => { setEditingPortfolioId(null); setPortfolioForm({ ...emptyPortfolio }); setPortfolioImage(null); setPortfolioImages([]);
+setExistingPortfolioPhotos([]);
+setReplacingPhotoId(null);
+setReplacementPhoto(null); }}>Cancelar edición</button>}</form><h3>Trabajos cargados ({portfolio.length})</h3>{portfolio.length === 0 ? <p>Todavía no hay trabajos cargados.</p> : <div style={{ display: "grid", gap: 10 }}>{portfolio.map(item => <article key={item.id} style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12, border: "1px solid #e5eaf4", borderRadius: 12, padding: 12 }}><img src={item.image_url} alt={item.title} style={{ width: 76, height: 76, objectFit: "cover", borderRadius: 9 }} /><div style={{ flex: "1 1 180px" }}><b>{item.title}</b><div style={{ color: "#6d7891", fontSize: 12 }}>{item.category || "Tazas"} · {item.is_active ? "Publicado" : "Oculto"}{item.is_featured ? " · ⭐ Destacado" : ""}</div></div><button style={secondaryButton} onClick={() => editPortfolio(item)}>Editar</button><button style={secondaryButton} onClick={() => togglePortfolio(item)}>{item.is_active ? "Ocultar" : "Publicar"}</button><button style={{ ...buttonStyle, background: "#fff0f4", color: "#b42355" }} onClick={() => deletePortfolio(item)}>Eliminar</button></article>)}</div>}</section>
   </div></main>;
 }
 
