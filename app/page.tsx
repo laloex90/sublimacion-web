@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowRight, Check, Heart, Menu, Palette, Search, ShoppingCart, Sparkles, Truck, MessageCircle, X } from "lucide-react";
 import { categories as defaultCategories, formatPrice, type Product } from "@/lib/products";
 import { supabase } from "@/lib/supabase";
