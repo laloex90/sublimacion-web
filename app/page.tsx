@@ -249,6 +249,38 @@ setSettingsLoaded(true);
       document.body.style.overflow = "";
     };
   }, [selectedPortfolioItem]);
+  // Precarga la imagen actual y las imágenes vecinas del trabajo abierto.
+  const preloadedPortfolioImages = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (!selectedPortfolioItem) return;
+
+    const images = selectedPortfolioItem.images?.length
+      ? selectedPortfolioItem.images
+      : [selectedPortfolioItem.image_url];
+
+    const total = images.length;
+
+    if (!total) return;
+
+    const indexes = [
+      selectedPortfolioImageIndex,
+      (selectedPortfolioImageIndex + 1) % total,
+      (selectedPortfolioImageIndex - 1 + total) % total,
+    ];
+
+    indexes.forEach(index => {
+      const url = images[index];
+
+      if (!url || preloadedPortfolioImages.current.has(url)) return;
+
+      preloadedPortfolioImages.current.add(url);
+
+      const image = new Image();
+      image.decoding = "async";
+      image.src = url;
+    });
+  }, [selectedPortfolioItem, selectedPortfolioImageIndex]);
 
   useEffect(() => {
     if (!selectedProduct) return;
