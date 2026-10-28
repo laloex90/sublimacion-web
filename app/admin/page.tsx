@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState, useRef, type FormEvent } from "react";
 import { supabase } from "@/lib/supabase";
 
 import { formatPrice, type Product } from "@/lib/products";
@@ -65,6 +65,7 @@ const [heroImage, setHeroImage] = useState<File | null>(null);
   const [portfolioImage, setPortfolioImage] = useState<File | null>(null);
   const [portfolioImages, setPortfolioImages] = useState<File[]>([]);
   const [editingPortfolioId, setEditingPortfolioId] = useState<string | null>(null);
+  const [portfolioEditorRef = useRef<HTMLElement | null>(null);
   const [existingPortfolioPhotos, setExistingPortfolioPhotos] =
   useState<PortfolioPhoto[]>([]);
 const [replacingPhotoId, setReplacingPhotoId] =
@@ -333,7 +334,10 @@ async function savePortfolio(e: FormEvent) {
     if (photosError) throw photosError;
 
     setExistingPortfolioPhotos((data || []) as PortfolioPhoto[]);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    document.getElementById("portfolio-editor")?.scrollIntoView({
+  behavior: "smooth",
+  block: "start",
+});
   } catch (e) {
     setError(
       e instanceof Error
@@ -486,7 +490,7 @@ async function deletePortfolioPhoto(photo: PortfolioPhoto) {
 
   <section style={panel}><h2 style={{ marginTop: 0 }}>🛍️ Productos ({products.length})</h2>{products.length === 0 ? <p>Todavía no hay productos cargados.</p> : <div style={{ display: "grid", gap: 10 }}>{products.map(p => <article key={p.id} style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12, border: "1px solid #e5eaf4", borderRadius: 12, padding: 12 }}><img src={p.image_url} alt={p.name} style={{ width: 76, height: 76, objectFit: "cover", borderRadius: 9, background: "#f3f5fa" }} /><div style={{ flex: "1 1 180px" }}><b>{p.name}</b><div style={{ color: "#6d7891", fontSize: 12, marginTop: 4 }}>{p.category} · {formatPrice(p.price)}</div><div style={{ fontSize: 12, marginTop: 4 }}>{p.is_active ? "Publicado" : "Oculto"}{p.featured ? " · Destacado" : ""}</div></div><button style={secondaryButton} onClick={() => editProduct(p)}>Editar</button><button style={secondaryButton} onClick={() => toggleProduct(p)}>{p.is_active ? "Ocultar" : "Publicar"}</button><button style={{ ...buttonStyle, background: "#fff0f4", color: "#b42355" }} onClick={() => deleteProduct(p)}>Eliminar</button></article>)}</div>}</section>
 
-<section style={panel}><h2 style={{ marginTop: 0 }}>{editingPortfolioId ? "✏️ Editar trabajo" : "📸 Agregar a Nuestros trabajos"}</h2><p style={{ color: "#6d7891", fontSize: 13 }}>Publicá ejemplos de tus trabajos personalizados en la página principal.</p><form onSubmit={savePortfolio}><label style={label}>Título<input style={inputStyle} value={portfolioForm.title} onChange={e => setPortfolioForm({ ...portfolioForm, title: e.target.value })} required /></label><label style={label}>Categoría<select style={inputStyle} value={portfolioForm.category} onChange={e => setPortfolioForm({ ...portfolioForm, category: e.target.value })} required>{categories.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}</select></label><label style={label}>Descripción<textarea style={{ ...inputStyle, minHeight: 70 }} value={portfolioForm.description} onChange={e => setPortfolioForm({ ...portfolioForm, description: e.target.value })} /></label>
+<section id="portfolio-editor" style={panel}><h2 style={{ marginTop: 0 }}>{editingPortfolioId ? "✏️ Editar trabajo" : "📸 Agregar a Nuestros trabajos"}</h2><p style={{ color: "#6d7891", fontSize: 13 }}>Publicá ejemplos de tus trabajos personalizados en la página principal.</p><form onSubmit={savePortfolio}><label style={label}>Título<input style={inputStyle} value={portfolioForm.title} onChange={e => setPortfolioForm({ ...portfolioForm, title: e.target.value })} required /></label><label style={label}>Categoría<select style={inputStyle} value={portfolioForm.category} onChange={e => setPortfolioForm({ ...portfolioForm, category: e.target.value })} required>{categories.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}</select></label><label style={label}>Descripción<textarea style={{ ...inputStyle, minHeight: 70 }} value={portfolioForm.description} onChange={e => setPortfolioForm({ ...portfolioForm, description: e.target.value })} /></label>
 <label style={label}>
   Imágenes del trabajo
   <input
