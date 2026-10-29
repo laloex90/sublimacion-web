@@ -30,6 +30,13 @@ type PortfolioItem = {
   sort_order: number;
 };
 
+type CartItem = {
+  product: Product;
+  quantity: number;
+  notes: string;
+};
+
+
 const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "5493624642189";
 
 const defaultSettings: SiteSettings = {
@@ -56,7 +63,7 @@ export default function Home() {
   const [portfolio, setPortfolio] = useState<PortfolioItem[]>([]);
   const [activeCategory, setActiveCategory] = useState("Todos");
   const [search, setSearch] = useState("");
-  const [cart, setCart] = useState<Product[]>([]);
+  const [cart, setCart] = useState<CartItem[]>([]);
   const [mobileMenu, setMobileMenu] = useState(false);
 
   // Carga progresiva: 4 elementos iniciales en cada sección.
@@ -308,16 +315,90 @@ setSettingsLoaded(true);
     };
   }, [selectedProduct]);
 
-  const whatsappLink = (items: Product[]) => {
-    const lines = items
-      .map(item => `• ${item.name} — ${formatPrice(item.price)}`)
-      .join("\n");
+  
+function addToCart(product: Product) {
+  setCart(current => {
+    const existing = current.find(
+      item => item.product.id === product.id
+    );
 
-    const message =
-      `¡Hola! Quiero consultar por estos productos de Tu Sublimación Creativa:\n${lines}\n\n¿Me pasás disponibilidad y opciones de personalización?`;
+    if (existing) {
+      return current.map(item =>
+        item.product.id === product.id
+          ? { ...item, quantity: item.quantity + 1 }
+          : item
+      );
+    }
 
-    return `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
-  };
+    return [
+      ...current,
+      { product, quantity: 1, notes: "" }
+    ];
+  });
+}
+
+function updateCartQuantity(productId: string, quantity: number) {
+  if (quantity < 1) return;
+
+  setCart(current =>
+    current.map(item =>
+      item.product.id === productId
+        ? { ...item, quantity }
+        : item
+    )
+  );
+}
+
+function updateCartNotes(productId: string, notes: string) {
+  setCart(current =>
+    current.map(item =>
+      item.product.id === productId
+        ? { ...item, notes }
+        : item
+    )
+  );
+}
+
+function productWhatsappLink(product: Product) {
+  const message =
+    `¡Hola! Quiero consultar por este producto de Tu Sublimación Creativa:\n\n` +
+    `Producto: ${product.name}\n` +
+    `Categoría: ${product.category}\n` +
+    `Precio publicado: ${formatPrice(product.price)}\n\n` +
+    `¿Me pasás disponibilidad y opciones de personalización?`;
+
+  return `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
+}
+
+const whatsappLink = (items: CartItem[]) => {
+  const lines = items.map(item => {
+    const subtotal = item.product.price * item.quantity;
+
+    return [
+      `• ${item.product.name}`,
+      `  Cantidad: ${item.quantity}`,
+      `  Precio unitario: ${formatPrice(item.product.price)}`,
+      `  Subtotal: ${formatPrice(subtotal)}`,
+      ...(item.notes.trim()
+        ? [`  Personalización: ${item.notes.trim()}`]
+        : [])
+    ].join("\n");
+  });
+
+  const total = items.reduce(
+    (sum, item) => sum + item.product.price * item.quantity,
+    0
+  );
+
+  const message =
+    `¡Hola! Quiero realizar una consulta por mi pedido en Tu Sublimación Creativa.\n\n` +
+    `${lines.join("\n\n")}\n\n` +
+    `TOTAL ESTIMADO: ${formatPrice(total)}\n\n` +
+    `¿Me confirmás disponibilidad, precio final y entrega?`;
+
+  return `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
+};
+
 
   function renderProductCard(product: Product, index: number, isFeatured = false) {
     return (
@@ -350,7 +431,7 @@ setSettingsLoaded(true);
           <button
             className="favorite"
             aria-label={`Agregar ${product.name} al carrito`}
-            onClick={() => setCart(current => [...current, product])}
+            onClick={() => addToCart(product)}
           >
             <Heart size={17} />
           </button>
@@ -365,7 +446,7 @@ setSettingsLoaded(true);
             <strong>{formatPrice(product.price)}</strong>
             <button
               className="add-button"
-              onClick={() => setCart(current => [...current, product])}
+              onClick={() => addToCart(product)}
             >
               Sumar <span>+</span>
             </button>
@@ -422,7 +503,10 @@ setSettingsLoaded(true);
           className="cart-button"
           onClick={() => document.getElementById("carrito")?.scrollIntoView({ behavior: "smooth" })}
         >
-          <ShoppingCart size={19} /> <span>Carrito ({cart.length})</span>
+          <ShoppingCart size={19} />
+<span>
+  Carrito ({cart.reduce((sum, item) => sum + item.quantity, 0)})
+</span>
         </button>
       </header>
 
@@ -945,7 +1029,7 @@ setSettingsLoaded(true);
 
               <a
                 className="button button-green"
-                href={whatsappLink([selectedProduct])}
+                href={productWhatsappLink(selectedProduct)}
                 target="_blank"
                 rel="noreferrer"
               >
@@ -978,133 +1062,173 @@ setSettingsLoaded(true);
           <p>Agregá productos y enviá tu consulta por WhatsApp.</p>
         </div>
 
-        {cart.length ? (
-          <>
-            <ul className="cart-list">
-              {cart.map((item, i) => (
-                <li key={`${item.id}-${i}`}>
-                  <span>{item.name}</span>
-                  <b>{formatPrice(item.price)}</b>
-                  <button
-                    aria-label="Quitar producto"
-                    onClick={() => setCart(current => current.filter((_, index) => index !== i))}
-                  >
-                    ×
-                  </button>
-                </li>
-              ))}
-            </ul>
-
-            <div className="cart-total">
-              <b>Total estimado: {formatPrice(cart.reduce((sum, item) => sum + item.price, 0))}</b>
-              <a className="button button-green" href={whatsappLink(cart)} target="_blank" rel="noreferrer">
-                <MessageCircle size={18} /> Enviar pedido por WhatsApp
-              </a>
-            </div>
-          </>
-        ) : (
-          <div className="cart-empty">
-            <ShoppingCart />
-            <span>Tu carrito está esperando tus favoritos.</span>
-            <a href="#catalogo">Explorar productos <ArrowRight size={15} /></a>
-          </div>
-        )}
-      </section>
-
-      <footer id="contacto">
-        <div className="footer-brand">
-          <span className="brand-mark"><Palette size={25} /></span>
-          <span className="brand-text"><b>Tu Sublimación</b><strong>Creativa</strong></span>
-        </div>
-
-        <p>Tu idea, nuestro trabajo. ♡</p>
-
-        <a className="button button-green" href={`https://wa.me/${whatsappNumber}`} target="_blank" rel="noreferrer">
-          <MessageCircle size={18} /> Hablemos por WhatsApp
-        </a>
-
-        <div
+       
+{cart.length ? (
+  <>
+    <div className="cart-list">
+      {cart.map(item => (
+        <article
+          key={item.product.id}
           style={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            gap: 18,
-            margin: "20px 0",
+            display: "grid",
+            gridTemplateColumns: "minmax(0, 1fr)",
+            gap: 12,
+            padding: "16px 0",
+            borderBottom: "1px solid #e5eaf4"
           }}
         >
-          {settings.facebook_url && (
-            <a
-              href={settings.facebook_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Visitar Facebook"
-              title="Facebook"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 8,
-                color: "#1877F2",
-                fontWeight: 700,
-                textDecoration: "none",
-              }}
-            >
-              <svg width="25" height="25" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                <path d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047V9.413c0-3.025 1.792-4.697 4.533-4.697 1.312 0 2.686.236 2.686.236v2.973h-1.513c-1.49 0-1.956.93-1.956 1.886v2.262h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z" />
-              </svg>
-              Facebook
-            </a>
-          )}
+          <div>
+            <strong>{item.product.name}</strong>
+            <p style={{ margin: "4px 0", color: "#6d7891" }}>
+              {item.product.category}
+            </p>
+            <p style={{ margin: "4px 0" }}>
+              Precio unitario: {formatPrice(item.product.price)}
+            </p>
+          </div>
 
-          {settings.instagram_url && (
-            <a
-              href={settings.instagram_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Visitar Instagram"
-              title="Instagram"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 8,
-                color: "#C13584",
-                fontWeight: 700,
-                textDecoration: "none",
-              }}
-            >
-              <svg
-                width="25"
-                height="25"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
-                <rect x="3" y="3" width="18" height="18" rx="5" />
-                <circle cx="12" cy="12" r="4" />
-                <circle cx="17.5" cy="6.5" r="0.8" fill="currentColor" stroke="none" />
-              </svg>
-              Instagram
-            </a>
-          )}
-        </div>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              flexWrap: "wrap"
+            }}
+          >
+            <label htmlFor={`quantity-${item.product.id}`}>
+              Cantidad:
+            </label>
 
-        <small>
-          © {new Date().getFullYear()} Tu Sublimación Creativa · Todos los derechos reservados.
-        </small>
-      </footer>
+            <button
+              type="button"
+              aria-label={`Disminuir cantidad de ${item.product.name}`}
+              disabled={item.quantity <= 1}
+              onClick={() =>
+                updateCartQuantity(
+                  item.product.id,
+                  item.quantity - 1
+                )
+              }
+            >
+              −
+            </button>
+
+            <input
+              id={`quantity-${item.product.id}`}
+              type="number"
+              min="1"
+              step="1"
+              value={item.quantity}
+              onChange={event => {
+                const value = Number(event.target.value);
+
+                if (Number.isSafeInteger(value) && value >= 1) {
+                  updateCartQuantity(item.product.id, value);
+                }
+              }}
+              style={{ width: 64, padding: 8 }}
+            />
+
+            <button
+              type="button"
+              aria-label={`Aumentar cantidad de ${item.product.name}`}
+              onClick={() =>
+                updateCartQuantity(
+                  item.product.id,
+                  item.quantity + 1
+                )
+              }
+            >
+              +
+            </button>
+          </div>
+
+          <label
+            htmlFor={`notes-${item.product.id}`}
+            style={{ fontWeight: 700 }}
+          >
+            Personalización de este producto
+          </label>
+
+          <textarea
+            id={`notes-${item.product.id}`}
+            value={item.notes}
+            onChange={event =>
+              updateCartNotes(item.product.id, event.target.value)
+            }
+            placeholder="Nombre, frase, color, diseño o cualquier detalle..."
+            rows={3}
+            maxLength={500}
+            style={{
+              width: "100%",
+              boxSizing: "border-box",
+              padding: 12,
+              border: "1px solid #e5eaf4",
+              borderRadius: 10,
+              font: "inherit"
+            }}
+          />
+
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 12
+            }}
+          >
+            <strong>
+              Subtotal: {formatPrice(item.product.price * item.quantity)}
+            </strong>
+
+            <button
+              type="button"
+              onClick={() =>
+                setCart(current =>
+                  current.filter(
+                    currentItem =>
+                      currentItem.product.id !== item.product.id
+                  )
+                )
+              }
+              aria-label={`Quitar ${item.product.name} del carrito`}
+            >
+              Quitar
+            </button>
+          </div>
+        </article>
+      ))}
+    </div>
+
+    <div className="cart-total">
+      <b>
+        Total estimado:{" "}
+        {formatPrice(
+          cart.reduce(
+            (sum, item) =>
+              sum + item.product.price * item.quantity,
+            0
+          )
+        )}
+      </b>
 
       <a
-        className="floating-whatsapp"
-        href={`https://wa.me/${whatsappNumber}`}
+        className="button button-green"
+        href={whatsappLink(cart)}
         target="_blank"
         rel="noreferrer"
-        aria-label="Contactar por WhatsApp"
       >
-        <MessageCircle size={26} />
+        <MessageCircle size={18} />
+        Enviar pedido por WhatsApp
       </a>
-    </main>
-  );
-}
+    </div>
+  </>
+) : (
+  <div className="cart-empty">
+    <ShoppingCart />
+    <span>Tu carrito está esperando tus favoritos.</span>
+    <a href="#catalogo">
+      Explorar productos <ArrowRight size={15} />
+    </a>
+  </div>
+)}
