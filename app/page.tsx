@@ -1232,3 +1232,8 @@ const whatsappLink = (items: CartItem[]) => {
     </a>
   </div>
   )}
+
+      </section>
+    </main>
+  );
+}
