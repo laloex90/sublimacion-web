@@ -65,7 +65,7 @@ const [heroImage, setHeroImage] = useState<File | null>(null);
   const [portfolioImage, setPortfolioImage] = useState<File | null>(null);
   const [portfolioImages, setPortfolioImages] = useState<File[]>([]);
   const [editingPortfolioId, setEditingPortfolioId] = useState<string | null>(null);
-  const [portfolioEditorRef = useRef<HTMLElement | null>(null);
+  const portfolioEditorRef = useRef<HTMLElement | null>(null);
   useEffect(() => {
   if (!editingPortfolioId) return;
 
