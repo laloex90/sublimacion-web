@@ -454,7 +454,7 @@ const whatsappLink = (items: CartItem[]) => {
 
           <a
             className="product-whatsapp"
-            href={productWhatsappLink([product])}
+            href={productWhatsappLink(product)}
             target="_blank"
             rel="noreferrer"
           >
