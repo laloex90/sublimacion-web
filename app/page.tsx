@@ -1231,4 +1231,4 @@ const whatsappLink = (items: CartItem[]) => {
       Explorar productos <ArrowRight size={15} />
     </a>
   </div>
-)}
+  }
