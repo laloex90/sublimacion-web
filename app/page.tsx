@@ -185,40 +185,50 @@ setSettingsLoaded(true);
     });
   }
 
-  const visibleProducts = useMemo(() => products.filter(product => {
+  const visibleProducts = useMemo(() => products
+  .filter(product => {
     const categoryMatch =
       activeCategory === "Todos" || product.category === activeCategory;
 
     const searchMatch =
       `${product.name} ${product.category} ${product.description}`
-        .toLowerCase()
-        .includes(search.toLowerCase().trim());
+        .toLocaleLowerCase("es")
+        .includes(search.toLocaleLowerCase("es").trim());
 
     return categoryMatch && searchMatch;
-  }), [products, activeCategory, search]);
+  })
+  .sort((a, b) =>
+    a.name.localeCompare(b.name, "es", { sensitivity: "base" })
+  ),
+  [products, activeCategory, search]
+);
 
   // Los destacados tienen su propia lista, independiente de los filtros del catálogo.
   const featuredProducts = useMemo(
-    () => products.filter(product => product.featured),
-    [products]
-  );
+  () => products
+    .filter(product => product.featured)
+    .sort((a, b) =>
+      a.name.localeCompare(b.name, "es", { sensitivity: "base" })
+    ),
+  [products]
+);
 
   const visiblePortfolio = useMemo(() => portfolio
-    .filter(item =>
-      activePortfolioCategory === "Todos" ||
-      (item.category || "Tazas") === activePortfolioCategory
-    )
-    .filter(item =>
-      `${item.title} ${item.description} ${item.category || "Tazas"}`
-        .toLocaleLowerCase()
-        .includes(portfolioSearch.toLocaleLowerCase().trim())
-    )
-    .sort((a, b) =>
-      Number(Boolean(b.is_featured)) - Number(Boolean(a.is_featured)) ||
-      (a.sort_order ?? 0) - (b.sort_order ?? 0)
-    ),
-    [portfolio, activePortfolioCategory, portfolioSearch]
-  );
+  .filter(item =>
+    activePortfolioCategory === "Todos" ||
+    (item.category || "Tazas") === activePortfolioCategory
+  )
+  .filter(item =>
+    `${item.title} ${item.description} ${item.category || "Tazas"}`
+      .toLocaleLowerCase("es")
+      .includes(portfolioSearch.toLocaleLowerCase("es").trim())
+  )
+  .sort((a, b) =>
+    a.title.localeCompare(b.title, "es", { sensitivity: "base" })
+  ),
+  [portfolio, activePortfolioCategory, portfolioSearch]
+);
+
 
   const displayedProducts = visibleProducts.slice(0, visibleProductCount);
   const displayedFeaturedProducts = featuredProducts.slice(0, visibleFeaturedCount);
